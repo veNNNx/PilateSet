@@ -1,0 +1,3 @@
+# Top-level flows are run in alphabetical order; helpers/ is only used via runFlow.
+flows:
+  - "*.yml"

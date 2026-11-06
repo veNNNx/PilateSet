@@ -1,0 +1,70 @@
+{
+  "name": "pilateset",
+  "version": "1.0.3",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "9.2.1",
+    "expo": "~58.0.20",
+    "expo-constants": "~58.0.13",
+    "expo-document-picker": "~58.0.4",
+    "expo-file-system": "~58.0.12",
+    "expo-image": "~58.0.17",
+    "expo-linking": "~58.0.14",
+    "expo-print": "~58.0.8",
+    "expo-router": "~58.0.27",
+    "expo-sharing": "~58.0.20",
+    "expo-sqlite": "~58.0.14",
+    "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.6",
+    "pdfmake": "^0.2.23",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-draggable-flatlist": "^4.0.3",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "react-native-web": "^0.21.4",
+    "react-native-worklets": "0.13.0"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "30.0.0",
+    "@types/pdfmake": "^0.3.3",
+    "@types/react": "~19.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.13",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "start:tunnel": "expo start --tunnel",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint && eslint tests",
+    "test": "jest --runInBand",
+    "test:components": "jest --runInBand tests/components",
+    "test:screens": "jest --runInBand tests/screens",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --runInBand tests/unit tests/storage",
+    "test:e2e": "maestro test .maestro",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.[jt]s?(x)"
+    ],
+    "clearMocks": true
+  },
+  "private": true
+}

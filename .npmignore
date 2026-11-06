@@ -1,0 +1,7 @@
+.expo/
+node_modules/
+.git/
+tests/
+.maestro/
+coverage/
+docs/

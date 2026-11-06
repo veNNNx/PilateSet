@@ -1,0 +1,13 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- tapOn: "Ćwiczenia"
+- tapOn: "Szukaj ćwiczenia"
+- inputText: "Footwork Parallel"
+- hideKeyboard
+- tapOn: "Dodaj do ulubionych: Footwork Parallel"
+- tapOn: "Pokaż ulubione ćwiczenia"
+- assertVisible: "Footwork Parallel"
+- assertVisible: "Ulubione: Footwork Parallel"
+- tapOn: "Usuń z ulubionych: Footwork Parallel"

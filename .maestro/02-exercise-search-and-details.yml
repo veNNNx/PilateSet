@@ -1,0 +1,15 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- tapOn: "Ćwiczenia"
+- tapOn: "Szukaj ćwiczenia"
+- inputText: "Footwork Parallel"
+- hideKeyboard
+- assertVisible: "Footwork Parallel"
+- assertNotVisible: "Dead bug"
+- tapOn: "Footwork Parallel"
+- assertVisible: "Szczegóły ćwiczenia"
+- assertVisible: "Footwork Parallel"
+- tapOn: "Wróć"
+- assertVisible: "Szukaj ćwiczenia"

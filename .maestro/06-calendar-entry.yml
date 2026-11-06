@@ -1,0 +1,20 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: helpers/create-plan.yml
+    env:
+      PLAN_NAME: "E2E kalendarz"
+      EXERCISE_QUERY: "Footwork Parallel"
+      EXERCISE_NAME: "Footwork Parallel"
+- tapOn: "Kalendarz"
+- tapOn: "Dodaj trening"
+- assertVisible: "Godzina"
+- assertVisible: "Plan treningowy"
+- tapOn: "16:00"
+- tapOn: "E2E kalendarz"
+- tapOn: "Zapisz trening"
+- assertVisible: "Dzisiaj"
+- tapOn: "E2E kalendarz.*"
+- assertVisible: "Szczegóły treningu"

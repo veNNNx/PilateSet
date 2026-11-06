@@ -1,0 +1,18 @@
+# Creates a plan with one exercise. Expects env: PLAN_NAME, EXERCISE_QUERY, EXERCISE_NAME.
+appId: com.vennnx.pilateset
+---
+- tapOn: "Plany"
+- tapOn: "Utwórz plan"
+- assertVisible: "Nowy plan"
+- tapOn: "Nazwa planu"
+- inputText: ${PLAN_NAME}
+- hideKeyboard
+- tapOn: "Dodaj ćwiczenia"
+- tapOn: "Szukaj ćwiczenia do planu"
+- inputText: ${EXERCISE_QUERY}
+- hideKeyboard
+- tapOn: "Dodaj ${EXERCISE_NAME} do planu"
+- tapOn: "Zamknij"
+- assertVisible: ${EXERCISE_NAME}
+- tapOn: "Zapisz nowy plan"
+- assertVisible: ${PLAN_NAME}

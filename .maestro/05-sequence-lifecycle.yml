@@ -1,0 +1,23 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- tapOn: "Sekwencje"
+- tapOn: "Utwórz sekwencję"
+- assertVisible: "Nowa sekwencja"
+- tapOn: "Zapisz nową sekwencję"
+- assertVisible: "Uzupełnij nazwę"
+- tapOn: "Nazwa sekwencji"
+- inputText: "E2E sekwencja"
+- hideKeyboard
+- tapOn: "Dodaj ćwiczenia"
+- tapOn: "Szukaj ćwiczenia do sekwencji"
+- inputText: "Footwork Parallel"
+- hideKeyboard
+- tapOn: "Dodaj Footwork Parallel do sekwencji"
+- tapOn: "Zamknij"
+- tapOn: "Zapisz nową sekwencję"
+- assertVisible: "E2E sekwencja"
+- tapOn: "E2E sekwencja"
+- assertVisible: "Szczegóły sekwencji"
+- assertVisible: "Skład sekwencji"

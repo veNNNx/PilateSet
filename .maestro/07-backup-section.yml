@@ -1,0 +1,12 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- tapOn: "Informacje"
+- assertVisible: "Wersja"
+- assertVisible: "Historia zmian"
+- assertVisible: "Twoje dane"
+- assertVisible: "Pobierz wszystkie dane JSON"
+- assertVisible: "Załaduj dane z pliku JSON"
+- tapOn: "Pokazuj zdjęcia ćwiczeń"
+- tapOn: "Pokazuj zdjęcia ćwiczeń"

@@ -1,0 +1,18 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: helpers/create-plan.yml
+    env:
+      PLAN_NAME: "E2E plan"
+      EXERCISE_QUERY: "Footwork Parallel"
+      EXERCISE_NAME: "Footwork Parallel"
+- tapOn: "E2E plan"
+- assertVisible: "Szczegóły planu"
+- assertVisible: "Skład planu"
+- assertVisible: "Footwork Parallel"
+- tapOn: "Usuń plan E2E plan"
+- tapOn: "Usuń"
+- assertVisible: "Utwórz plan"
+- assertNotVisible: "E2E plan"

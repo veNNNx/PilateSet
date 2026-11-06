@@ -1,0 +1,16 @@
+appId: com.vennnx.pilateset
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Utwórz plan"
+- tapOn: "Sekwencje"
+- assertVisible: "Utwórz sekwencję"
+- tapOn: "Ćwiczenia"
+- assertVisible: "Szukaj ćwiczenia"
+- tapOn: "Kalendarz"
+- assertVisible: "Dodaj trening"
+- tapOn: "Informacje"
+- assertVisible: "PilateSet"
+- assertVisible: "Twoje dane"
+- tapOn: "Plany"
+- assertVisible: "Utwórz plan"
