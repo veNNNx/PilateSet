@@ -62,6 +62,10 @@ describe("Sequence detail screen", () => {
       screen.getByLabelText("Opis sekwencji"),
       " New description ",
     );
+    await fireEvent.changeText(
+      screen.getByLabelText("Obciążenie sekwencji"),
+      " Cz-CzCz ",
+    );
     await fireEvent.press(
       screen.getByRole("button", {
         name: `Usuń ${secondExercise.name} z sekwencji`,
@@ -78,9 +82,11 @@ describe("Sequence detail screen", () => {
       id: sequence.id,
       name: "Updated flow",
       description: "New description",
+      load: "Cz-CzCz",
       exerciseIds: [exercise.id],
     });
     expect(screen.getByText("Updated flow")).toBeTruthy();
+    expect(screen.getByText("Cz-CzCz")).toBeTruthy();
   });
 
   it("saves an empty note as removal and reports note storage errors", async () => {

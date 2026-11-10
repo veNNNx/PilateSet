@@ -37,7 +37,6 @@ const sampleExercise = {
   bodyAreas: [],
   position: null,
   level: "Basic",
-  sets: "1",
   images: [],
   load: "",
   startingPosition: "",

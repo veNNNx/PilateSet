@@ -20,7 +20,6 @@ import { ExerciseCard } from "./ExerciseCard";
 import { FavoriteIndicator } from "./FavoriteIndicator";
 import { SequenceCard } from "./SequenceCard";
 import { sortFavoritesByName } from "../constants/sorting";
-import bodyAreas from "../data/bodyAreas.json";
 import exerciseLevels from "../data/exerciseLevels.json";
 import exercisePositions from "../data/exercisePositions.json";
 
@@ -56,7 +55,6 @@ export function PlanContentPicker({
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState<string | null>(null);
   const [position, setPosition] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const selectedIds = useMemo(
@@ -78,7 +76,6 @@ export function PlanContentPicker({
           exercise.position?.toLocaleLowerCase().includes(query)) &&
         (level === null || exercise.level === level) &&
         (position === null || exercise.position === position) &&
-        (category === null || exercise.bodyAreas.includes(category)) &&
         (!favoritesOnly ||
           selectedIds.has(exercise.id) ||
           isFavorite("exercise", exercise.id)),
@@ -98,7 +95,6 @@ export function PlanContentPicker({
     );
     return [...orderedSelected, ...others];
   }, [
-    category,
     content,
     exercises,
     favoritesOnly,
@@ -273,32 +269,6 @@ export function PlanContentPicker({
                         ]}
                       >
                         {itemPosition ?? "Dowolna"}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={styles.filterLabel}>Partia ciała</Text>
-              <View style={styles.filters}>
-                {["Wszystkie", ...bodyAreas].map((itemCategory) => {
-                  const value =
-                    itemCategory === "Wszystkie" ? null : itemCategory;
-                  const isSelected = category === value;
-                  return (
-                    <TouchableOpacity
-                      key={itemCategory}
-                      style={[styles.chip, isSelected && styles.chipSelected]}
-                      onPress={() => setCategory(value)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: isSelected }}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          isSelected && styles.chipTextSelected,
-                        ]}
-                      >
-                        {itemCategory}
                       </Text>
                     </TouchableOpacity>
                   );

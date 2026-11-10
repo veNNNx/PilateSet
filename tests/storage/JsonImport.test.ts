@@ -113,6 +113,40 @@ describe("JSON backup import", () => {
     ).toEqual((initialCalendar as CalendarEntry[]).map((entry) => entry.id));
   });
 
+  it("imports section load and drops legacy repetition counts", async () => {
+    const backup = createBackup();
+    backup["exercises.json"] = [
+      {
+        ...exercises[0],
+        name: "Imported exercise",
+        load: "Heavy spring",
+        sets: "3 × 10 powt.",
+      },
+      ...exercises.slice(1),
+    ];
+    const sequence = {
+      id: "s100",
+      name: "Imported section",
+      description: "",
+      load: "Medium spring",
+      exerciseIds: [exercises[0].id],
+    };
+    backup["sequences.json"] = [sequence];
+
+    await importJsonBackup(JSON.stringify(backup));
+
+    const importedExercises = JSON.parse(
+      contents.get("pilateset.exerciseOverrides.v1") ?? "[]",
+    ) as Record<string, unknown>[];
+    expect(importedExercises).toEqual([
+      { ...exercises[0], name: "Imported exercise", load: "Heavy spring" },
+    ]);
+    expect(importedExercises[0]).not.toHaveProperty("sets");
+    expect(
+      JSON.parse(contents.get("pilateset.sequences.v1") ?? "[]"),
+    ).toEqual([sequence]);
+  });
+
   it("rejects malformed backup data before writing anything", async () => {
     const backup = createBackup();
     backup["calendar.json"] = [

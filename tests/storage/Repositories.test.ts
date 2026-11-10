@@ -76,6 +76,7 @@ const customSequence = {
   id: "s100",
   name: "Custom sequence",
   description: "A new flow",
+  load: "",
   exerciseIds: ["1"],
 };
 const customCalendarEntry = {
@@ -116,8 +117,22 @@ describe("plan storage", () => {
 
 describe("sequence storage", () => {
   it("loads bundled sequences and returns the next unused sequence id", async () => {
-    expect(await loadSequences()).toEqual(initialSequences);
+    expect(await loadSequences()).toEqual(
+      (initialSequences as object[]).map((sequence) => ({
+        ...sequence,
+        load: "",
+      })),
+    );
     expect(await getNextSequenceId()).toBe(`s${initialSequences.length + 1}`);
+  });
+
+  it("treats stored sequences without a load as having an empty load", async () => {
+    const { load: _load, ...legacySequence } = customSequence;
+    contents.set("pilateset.sequences.v1", JSON.stringify([legacySequence]));
+    expect(await loadSequences()).toContainEqual({
+      ...legacySequence,
+      load: "",
+    });
   });
 
   it("saves custom sequences and rejects malformed records", async () => {

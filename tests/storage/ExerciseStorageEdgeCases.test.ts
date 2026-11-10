@@ -34,7 +34,7 @@ describe("exercise override edge cases", () => {
     contents.set(
       "pilateset.exerciseOverrides.v1",
       JSON.stringify([
-        { ...exercises[0], name: "Edited" },
+        { ...exercises[0], name: "Edited", sets: "3 x 10" },
         { ...exercises[1], id: "16", name: "Retired" },
       ]),
     );
@@ -43,6 +43,7 @@ describe("exercise override edge cases", () => {
     expect(result.find((item) => item.id === exercises[0].id)?.name).toBe(
       "Edited",
     );
+    expect(result[0]).not.toHaveProperty("sets");
     expect(result.some((item) => item.id === "16")).toBe(false);
   });
 

@@ -44,6 +44,7 @@ const sequence = {
   id: "s1",
   name: "Core flow",
   description: "A short core sequence",
+  load: "",
   exerciseIds: [exercise.id],
 };
 
@@ -64,8 +65,7 @@ describe("ExerciseCard", () => {
 
     fireEvent.press(screen.getByRole("button", { name: exercise.name }));
 
-    expect(screen.getByText(exercise.sets)).toBeTruthy();
-    expect(screen.getByText(exercise.level)).toBeTruthy();
+    expect(screen.getByText("P1")).toBeTruthy();
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 

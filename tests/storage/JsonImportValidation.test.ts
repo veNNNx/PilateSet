@@ -301,4 +301,18 @@ describe("backup import validation", () => {
     expect(contents.has("pilateset.exerciseOverrides.v1")).toBe(true);
     expect(contents.get("pilateset.plans.v1")).toBe("[]");
   });
+
+  it("removes legacy repetition counts from imported exercise data", async () => {
+    const data = backup();
+    data["exercises.json"] = exercises.map((exercise) => ({
+      ...exercise,
+      sets: "3 × 10 powt.",
+    }));
+
+    await expect(
+      importJsonBackup(JSON.stringify(data)),
+    ).resolves.toBeUndefined();
+
+    expect(contents.get("pilateset.exerciseOverrides.v1")).toBe("[]");
+  });
 });

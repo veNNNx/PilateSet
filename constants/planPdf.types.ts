@@ -12,6 +12,8 @@ export type PlanPdfItem =
       number: string;
       name: string;
       description: string;
+      load?: string;
+      levels: string[];
       exercises: PlanPdfExercise[];
     };
 

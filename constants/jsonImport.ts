@@ -28,7 +28,6 @@ function isExercise(value: unknown): value is Exercise {
       value.position === null ||
       value.position === undefined) &&
     typeof value.level === "string" &&
-    typeof value.sets === "string" &&
     Array.isArray(value.images) &&
     value.images.every((image) => typeof image === "string") &&
     typeof value.load === "string" &&
@@ -60,6 +59,7 @@ function isSequence(value: unknown): value is Sequence {
     typeof value.id === "string" &&
     typeof value.name === "string" &&
     typeof value.description === "string" &&
+    (value.load === undefined || typeof value.load === "string") &&
     Array.isArray(value.exerciseIds) &&
     value.exerciseIds.every((id) => typeof id === "string")
   );
@@ -136,7 +136,13 @@ export async function importJsonBackup(contents: string): Promise<void> {
     );
   }
 
-  const exercises = readArray(parsedValue, "exercises.json", isExercise);
+  const exercises = readArray(parsedValue, "exercises.json", isExercise).map(
+    (exercise) => {
+      const normalized = { ...exercise } as Exercise & { sets?: unknown };
+      delete normalized.sets;
+      return normalized;
+    },
+  );
   const favorites = readArray(parsedValue, "favorites.json", isFavorite);
   const exerciseNotes = readArray(
     parsedValue,
@@ -149,7 +155,9 @@ export async function importJsonBackup(contents: string): Promise<void> {
     isSequenceNote,
   );
   const plans = readArray(parsedValue, "plans.json", isPlan);
-  const sequences = readArray(parsedValue, "sequences.json", isSequence);
+  const sequences = readArray(parsedValue, "sequences.json", isSequence).map(
+    (sequence) => ({ ...sequence, load: sequence.load ?? "" }),
+  );
   const calendar = readArray(parsedValue, "calendar.json", isCalendarEntry);
 
   const initialExercisesById = new Map(

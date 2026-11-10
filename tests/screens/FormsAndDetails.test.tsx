@@ -191,6 +191,7 @@ const sequence = {
   id: "s100",
   name: "Test sequence",
   description: "A short flow",
+  load: "",
   exerciseIds: [exercise.id],
 };
 const calendarEntry = {
@@ -389,6 +390,7 @@ describe("Sequence creation", () => {
       id: "s101",
       name: "Core sequence",
       description: "",
+      load: "",
       exerciseIds: [exercise.id],
     });
     expect(navigateBack).toHaveBeenCalledWith("/sequences");
@@ -483,6 +485,8 @@ describe("Plan and sequence details", () => {
           number: "2",
           name: sequence.name,
           description: sequence.description,
+          load: "Medium spring ",
+          levels: ["Średniozaawansowany"],
           exercises: [{ number: "2.1", exercise: exercises[1] }],
         },
       ],
@@ -493,10 +497,16 @@ describe("Plan and sequence details", () => {
     expect(JSON.stringify(pdfDefinition)).toContain(exercise.startingPosition);
     expect(JSON.stringify(pdfDefinition)).toContain("Pozycja wejściowa");
     expect(JSON.stringify(pdfDefinition)).toContain(sequence.name);
+    expect(JSON.stringify(pdfDefinition)).toContain("Medium spring");
+    const pdfContent = JSON.stringify(pdfDefinition);
+    expect(pdfContent).toContain(">P2</text>");
+    expect(pdfContent.indexOf(">P2</text>")).toBeLessThan(
+      pdfContent.indexOf("Medium spring"),
+    );
     expect(JSON.stringify(pdfDefinition)).toContain(exercises[1].name);
     expect(pdfDefinition.styles?.exerciseTitle).toMatchObject({ bold: true });
     expect(pdfDefinition.styles?.sequenceTitle).toMatchObject({ bold: true });
-    expect(pdfDefinition.styles?.metadata).toMatchObject({ italics: true });
+    expect(pdfContent).toContain("rx");
     expect(pdfDefinition).not.toHaveProperty("header");
     expect(pdfDefinition).not.toHaveProperty("footer");
     expect(
@@ -523,31 +533,58 @@ describe("Plan and sequence details", () => {
       `class="item-number">1.</span> ${exercise.name}`,
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      "font-size: 18pt",
+      "font-size: 17pt",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
+      "font-size: 7pt",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
       "column-count: 2",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      "font-size: 8.5pt",
+      "column-fill: auto",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
+      "font-size: 7.5pt",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
       exercise.movementSequence,
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      exercise.level,
+      'class="level-badge">P1</span>',
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      ".exercise h3 {\n              color: #202b30;\n              font-size: 8.5pt;\n              font-weight: 700;",
+      'class="load-badge">Light spring</span>',
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).not.toContain(
+      "<svg",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      ".metadata {\n              color: #397f78;\n              font-size: 7pt;\n              font-weight: 600;\n              font-style: italic;",
+      'class="position-badge">Supine (plecy)</span>',
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).not.toContain(
+      "nogi",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).not.toContain(
+      "Skład planu",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).not.toContain(
+      "Obciążenie:",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).not.toContain(
+      "Pozycja:",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      ".detail strong {\n              color: #526267;\n              font-size: 7pt;\n              font-weight: 700;",
+      ".exercise h3 {\n              color: #202b30;\n              font-size: 7.5pt;\n              font-weight: 700;",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
-      ".detail p {\n              color: #202b30;\n              display: inline;\n              font-size: 7.5pt;\n              font-weight: 400;",
+      ".load-badge, .position-badge {\n              align-items: center;\n              background: #fff;\n              border: 1px solid #dce5e3;",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
+      ".detail strong {\n              color: #526267;\n              font-size: 6pt;\n              font-weight: 700;",
+    );
+    expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
+      ".detail p {\n              color: #202b30;\n              display: inline;\n              font-size: 6.5pt;\n              font-weight: 400;",
     );
     expect(jest.mocked(Print.printAsync).mock.calls[0][0].html).toContain(
       "@page { margin: 0; }",
@@ -575,6 +612,7 @@ describe("Plan and sequence details", () => {
       {
         ...sequence,
         description: "Sequence description",
+        load: "Medium spring ",
         exerciseIds: [sequenceExercise.id, secondSequenceExercise.id],
       },
     ]);
@@ -584,12 +622,28 @@ describe("Plan and sequence details", () => {
       await screen.findByRole("button", { name: "Drukuj plan" }),
     );
 
-    const printedHtml = jest.mocked(Print.printAsync).mock.calls[0][0].html;
+    const printedHtml =
+      jest.mocked(Print.printAsync).mock.calls[0][0].html ?? "";
     expect(printedHtml).toContain(`Sekwencja: ${sequence.name}`);
     expect(printedHtml).toContain(
       `class="item-number">2.</span> Sekwencja: ${sequence.name}`,
     );
     expect(printedHtml).toContain("Sequence description");
+    const sequenceHeadingIndex = printedHtml.indexOf(
+      `Sekwencja: ${sequence.name}`,
+    );
+    const sequenceLevelIndex = printedHtml.indexOf(
+      '<span class="level-badge">P2</span><span class="level-badge">P3</span>',
+    );
+    const sequenceLoadIndex = printedHtml.indexOf(
+      '<span class="load-badge">Medium spring</span>',
+    );
+    const sequenceDescriptionIndex = printedHtml.indexOf(
+      "Sequence description",
+    );
+    expect(sequenceLevelIndex).toBeGreaterThan(sequenceHeadingIndex);
+    expect(sequenceLoadIndex).toBeGreaterThan(sequenceLevelIndex);
+    expect(sequenceDescriptionIndex).toBeGreaterThan(sequenceLoadIndex);
     expect(printedHtml).toContain(
       `class="item-number">1.</span> ${exercise.name}`,
     );
@@ -605,9 +659,7 @@ describe("Plan and sequence details", () => {
     expect(printedHtml).toContain(sequenceExercise.startingPosition);
     expect(printedHtml).toContain("Pozycja wejściowa");
     expect(printedHtml).toContain("Sekwencja ruchu");
-    expect(printedHtml).toContain(
-      '<h2 class="contents-title">Skład planu</h2>',
-    );
+    expect(printedHtml).not.toContain("Skład planu");
   });
 
   it("uses a native scroll view to display expanded sequence exercises", async () => {

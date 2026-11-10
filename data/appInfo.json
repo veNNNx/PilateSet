@@ -1,8 +1,13 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "releaseDate": "2026-11-06",
   "description": "PilateSet pomaga układać treningi Pilates, poznawać ćwiczenia i planować regularne sesje.\nDane pozostają na Twoim urządzeniu.",
   "changelog": [
+    {
+      "version": "1.0.4",
+      "date": "2026-11-10",
+      "message": "Uproszczono dodawanie ćwiczeń do planów (bez filtra partii ciała), dodano wielokrotny wybór pozycji na liście ćwiczeń i oznaczenia poziomów P1–P3. Usunięto liczbę powtórzeń, dodano obciążenie sekwencji oraz usprawniono drukowanie i eksport planów do PDF."
+    },
     {
       "version": "1.0.3",
       "date": "2026-11-06",

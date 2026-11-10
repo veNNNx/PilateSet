@@ -127,6 +127,14 @@ describe("Info tab", () => {
   });
 
   it("exports every backup dataset and displays success; export errors are alerted", async () => {
+    const sequence = {
+      id: "s1",
+      name: "Section with load",
+      description: "",
+      load: "Medium spring",
+      exerciseIds: ["1"],
+    };
+    jest.mocked(loadSequences).mockResolvedValue([sequence]);
     await render(<InfoScreen />);
     await fireEvent.press(
       screen.getByRole("button", { name: "Pobierz wszystkie dane JSON" }),
@@ -151,6 +159,13 @@ describe("Info tab", () => {
         exportedAt: expect.any(String),
       }),
     );
+    const exportedData = jest.mocked(exportJson).mock.calls[0][1];
+    expect(exportedData).toEqual(
+      expect.objectContaining({ "sequences.json": [sequence] }),
+    );
+    expect(JSON.stringify(exportedData)).not.toContain('"sets"');
+    expect(JSON.stringify(exportedData)).toContain('"load":"Light spring"');
+
     jest.mocked(exportJson).mockRejectedValueOnce(new Error("share failed"));
     await fireEvent.press(
       screen.getByRole("button", { name: "Pobierz wszystkie dane JSON" }),

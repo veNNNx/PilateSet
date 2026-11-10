@@ -9,11 +9,16 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Spacing } from "../constants/colors";
 import { useAppTheme } from "../constants/useAppTheme";
 import { useExerciseImagePreference } from "../constants/exerciseImagePreference";
 import type { Exercise } from "../constants/exercises";
-import { formatBodyAreas, formatExercisePosition } from "../constants/taxonomy";
+import {
+  exerciseLevelLabels,
+  formatBodyAreas,
+  formatExercisePosition,
+} from "../constants/taxonomy";
 import { getExerciseImage } from "../constants/exerciseImages";
 
 type ExerciseCardProps = {
@@ -41,6 +46,7 @@ export function ExerciseCard({
   const { showExerciseImages } = useExerciseImagePreference();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const position = formatExercisePosition(exercise.position);
+  const levelLabel = exerciseLevelLabels[exercise.level] ?? exercise.level;
 
   return (
     <View
@@ -78,14 +84,23 @@ export function ExerciseCard({
             >
               {exercise.name}
             </Text>
-            <Text style={styles.sets} numberOfLines={1}>
-              {exercise.sets}
+            <Text style={styles.level} numberOfLines={1}>
+              {levelLabel}
             </Text>
           </View>
           <View style={styles.metaTags}>
-            <Text style={styles.level} numberOfLines={1}>
-              {exercise.level}
-            </Text>
+            <View
+              style={styles.loadBadge}
+              accessible
+              accessibilityLabel={`Obciążenie: ${exercise.load}`}
+            >
+              <Ionicons
+                name="barbell-outline"
+                size={12}
+                color={colors.primaryDark}
+              />
+              <Text style={styles.loadText}>{exercise.load}</Text>
+            </View>
             {position ? (
               <View style={styles.positionBadge}>
                 <Text style={styles.positionBadgeText} numberOfLines={1}>
@@ -165,12 +180,24 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       fontSize: 10,
       fontWeight: "600",
     },
-    sets: {
-      color: colors.primary,
-      fontSize: 11,
+    loadBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      maxWidth: "100%",
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      flexShrink: 1,
+    },
+    loadText: {
+      color: colors.primaryDark,
+      fontSize: 10,
       fontWeight: "600",
-      flexShrink: 0,
-      textAlign: "right",
+      flexShrink: 1,
     },
     trailing: {
       flexDirection: "row",

@@ -15,18 +15,24 @@ export interface Sequence {
   id: string;
   name: string;
   description: string;
+  load: string;
   exerciseIds: string[];
 }
 
-const initialSequenceList: Sequence[] = initialSequences;
+const initialSequenceList: Sequence[] = (
+  initialSequences as Omit<Sequence, "load">[]
+).map((sequence) => ({ ...sequence, load: "" }));
 
-function isSequence(value: unknown): value is Sequence {
+function isStoredSequence(
+  value: unknown,
+): value is Omit<Sequence, "load"> & { load?: string } {
   if (typeof value !== "object" || value === null) return false;
   const sequence = value as Record<string, unknown>;
   return (
     typeof sequence.id === "string" &&
     typeof sequence.name === "string" &&
     typeof sequence.description === "string" &&
+    (sequence.load === undefined || typeof sequence.load === "string") &&
     Array.isArray(sequence.exerciseIds) &&
     sequence.exerciseIds.every((id) => typeof id === "string")
   );
@@ -46,12 +52,16 @@ export async function loadSequences(): Promise<Sequence[]> {
   const storedValue = await readJsonFile(STORAGE_FILE, STORAGE_KEY);
   const parsedValue: unknown =
     storedValue === null ? [] : JSON.parse(storedValue);
-  if (!Array.isArray(parsedValue) || !parsedValue.every(isSequence)) {
+  if (!Array.isArray(parsedValue) || !parsedValue.every(isStoredSequence)) {
     throw new Error("Zapis sekwencji jest nieprawidłowy.");
   }
-  const storedSequences = (parsedValue as Sequence[]).map((sequence) => ({
+  const parsedSequences = parsedValue as (Omit<Sequence, "load"> & {
+    load?: string;
+  })[];
+  const storedSequences: Sequence[] = parsedSequences.map((sequence) => ({
     ...sequence,
     id: canonicalSequenceId(sequence.id, sequenceIdMap),
+    load: sequence.load ?? "",
   }));
   const ids = new Set<string>();
   for (const sequence of storedSequences) {
@@ -60,7 +70,9 @@ export async function loadSequences(): Promise<Sequence[]> {
     ids.add(sequence.id);
   }
   const sequencesWereRenamed = storedSequences.some(
-    (sequence, index) => sequence.id !== (parsedValue as Sequence[])[index].id,
+    (sequence, index) =>
+      sequence.id !== parsedSequences[index].id ||
+      parsedSequences[index].load === undefined,
   );
   if (sequencesWereRenamed) {
     const [plans] = await Promise.all([

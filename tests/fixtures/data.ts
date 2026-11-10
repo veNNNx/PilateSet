@@ -9,7 +9,6 @@ type FixtureExercise = {
   bodyAreas: string[];
   position: string | null;
   level: string;
-  sets: string;
   images: string[];
   load: string;
   startingPosition: string;
@@ -18,7 +17,6 @@ type FixtureExercise = {
 };
 
 const base = {
-  sets: "1× 10 powt.",
   images: ["1.jpg"],
   load: "Light spring",
   startingPosition: "Lie on your back.",

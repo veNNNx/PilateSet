@@ -134,6 +134,7 @@ describe("ID maps and plan levels", () => {
       id: "s100",
       name: "seq",
       description: "",
+      load: "",
       exerciseIds: [exercises[0].id, "missing"],
     };
     expect(getPlanExerciseIds(plan, [sequence])).toEqual([

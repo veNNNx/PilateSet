@@ -9,6 +9,7 @@ import { setTestTheme } from "./testTheme";
 jest.mock("../../constants/useAppTheme", () =>
   jest.requireActual("./testTheme"),
 );
+jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("../../constants/exercises", () => ({
   __esModule: true,
   default:
@@ -20,6 +21,7 @@ const sequence = {
   id: "s1",
   name: "Core Flow",
   description: "A short flow",
+  load: "",
   exerciseIds: ["1", "3"],
 };
 
@@ -37,11 +39,31 @@ describe("SequenceCard", () => {
       />,
     );
     expect(screen.getByText("Core Flow")).toBeTruthy();
-    expect(screen.getByText("Początkujący · Zaawansowany")).toBeTruthy();
+    expect(screen.getByText("P1 · P3")).toBeTruthy();
     expect(screen.getByText("A short flow")).toBeTruthy();
     expect(screen.getByText("2 moves")).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Core Flow" }));
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the load badge under the name only when set", async () => {
+    const { rerender } = await render(
+      <SequenceCard
+        sequence={{ ...sequence, load: "Cz-CzCz" }}
+        exercises={exercises}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Obciążenie: Cz-CzCz")).toBeTruthy();
+    expect(screen.getByText("Cz-CzCz")).toBeTruthy();
+    await rerender(
+      <SequenceCard
+        sequence={sequence}
+        exercises={exercises}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText(/Obciążenie:/)).toBeNull();
   });
 
   it("exposes custom checkbox selection and accessibility label", async () => {
@@ -65,6 +87,7 @@ describe("SequenceCard", () => {
     const emptySequence = {
       ...sequence,
       description: "",
+      load: "",
       exerciseIds: ["unknown"],
     };
     await render(

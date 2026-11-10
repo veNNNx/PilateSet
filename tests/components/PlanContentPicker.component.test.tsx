@@ -63,18 +63,21 @@ const sequences = [
     id: "s1",
     name: "Warm Flow",
     description: "Easy flow",
+    load: "",
     exerciseIds: ["1", "4"],
   },
   {
     id: "s2",
     name: "Power Flow",
     description: "Strong flow",
+    load: "",
     exerciseIds: ["2", "3"],
   },
   {
     id: "s3",
     name: "Quiet Flow",
     description: "Slow flow",
+    load: "",
     exerciseIds: ["4"],
   },
 ];
@@ -138,7 +141,7 @@ describe("PlanContentPicker", () => {
     expect(onToggle).toHaveBeenCalledWith({ type: "exercise", id: "1" });
   });
 
-  it("filters exercises by level, position, and body area, and toggles each filter off", async () => {
+  it("filters exercises by level and position, and toggles each filter off", async () => {
     await renderPicker();
     await fireEvent.press(screen.getByRole("radio", { name: "Zaawansowany" }));
     expect(screen.getByText("Charlie Reach")).toBeTruthy();
@@ -149,12 +152,28 @@ describe("PlanContentPicker", () => {
     expect(screen.getByText("Charlie Reach")).toBeTruthy();
     expect(screen.queryByText("Bravo Rotation")).toBeNull();
     await fireEvent.press(screen.getByRole("radio", { name: "Standing" }));
-
-    await fireEvent.press(screen.getByRole("radio", { name: "nogi" }));
-    expect(screen.getByText("Alpha Press")).toBeTruthy();
-    expect(screen.queryByText("Bravo Rotation")).toBeNull();
-    await fireEvent.press(screen.getByRole("radio", { name: "Wszystkie" }));
     expect(screen.getByText("Bravo Rotation")).toBeTruthy();
+  });
+
+  it.each(["plan", "sequence"] as const)(
+    "omits body-area filters when adding exercises to a %s and keeps areas in the list",
+    async (owner) => {
+      await renderPicker({ owner });
+      expect(screen.queryByText("Partia ciała")).toBeNull();
+      expect(screen.queryByRole("radio", { name: "nogi" })).toBeNull();
+      expect(screen.getByText("nogi · mięśnie brzucha")).toBeTruthy();
+      expect(screen.getAllByText("Light spring").length).toBeGreaterThan(0);
+    },
+  );
+
+  it("still searches exercises by body area", async () => {
+    await renderPicker();
+    await fireEvent.changeText(
+      screen.getByLabelText("Szukaj ćwiczenia do planu"),
+      "klatka piersiowa",
+    );
+    expect(screen.getByText("Charlie Reach")).toBeTruthy();
+    expect(screen.queryByText("Alpha Press")).toBeNull();
   });
 
   it("shows favorites including selected items and keeps selected items ordered first", async () => {

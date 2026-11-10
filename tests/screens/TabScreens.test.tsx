@@ -107,6 +107,7 @@ const sequence = {
   id: "s100",
   name: "Test sequence",
   description: "A short flow",
+  load: "",
   exerciseIds: [exercise.id],
 };
 const calendarEntry = {

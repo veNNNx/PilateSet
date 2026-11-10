@@ -24,12 +24,48 @@ const sequence = {
   id: "seq-1",
   name: "Morning Flow",
   description: "Flow",
+  load: "",
   exerciseIds: ["1", "missing", "2"],
 };
 
 beforeEach(() => setTestTheme(false));
 
 describe("SequenceContentCard", () => {
+  it("shows mapped exercise levels in the top-right of the sequence header", async () => {
+    await render(
+      <SequenceContentCard
+        sequence={sequence}
+        exercises={exercises}
+        expanded={false}
+        onToggle={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText("P1 · P2")).toBeTruthy();
+  });
+
+  it("shows the load next to the title only when it is set", async () => {
+    const { rerender } = await render(
+      <SequenceContentCard
+        sequence={{ ...sequence, load: "Cz-CzCz" }}
+        exercises={exercises}
+        expanded={false}
+        onToggle={jest.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Obciążenie: Cz-CzCz")).toBeTruthy();
+    expect(screen.getByText("Cz-CzCz")).toBeTruthy();
+    await rerender(
+      <SequenceContentCard
+        sequence={sequence}
+        exercises={exercises}
+        expanded={false}
+        onToggle={jest.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText(/Obciążenie:/)).toBeNull();
+  });
+
   it("toggles collapsed/expanded state, forwards long press, and reports exercise navigation", async () => {
     const onToggle = jest.fn();
     const onHeaderLongPress = jest.fn();

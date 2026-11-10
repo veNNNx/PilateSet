@@ -97,6 +97,7 @@ describe("plan and sequence content", () => {
       id: "s100",
       name: "Sequence",
       description: "",
+      load: "",
       exerciseIds: [exercises[2].id, exercises[3].id],
     };
 
@@ -130,6 +131,7 @@ describe("plan and sequence content", () => {
       id: "s100",
       name: "Sequence",
       description: "",
+      load: "",
       exerciseIds: [exercises[1].id, "missing-exercise", exercises[0].id],
     };
     const expectedLevels = exerciseLevels.filter((level) =>
@@ -143,7 +145,7 @@ describe("plan and sequence content", () => {
 describe("exercise taxonomy formatting", () => {
   it("formats body areas and optional positions for display", () => {
     expect(formatBodyAreas(["Core", "Arms"])).toBe("Core · Arms");
-    expect(formatExercisePosition("Supine")).toBe("Pozycja: Supine");
+    expect(formatExercisePosition("Supine")).toBe("Supine");
     expect(formatExercisePosition(null)).toBeNull();
     expect(formatExercisePosition(undefined)).toBeNull();
   });

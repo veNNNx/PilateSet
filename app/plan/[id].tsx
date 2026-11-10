@@ -51,6 +51,10 @@ import { PlanContentPicker } from "../../components/PlanContentPicker";
 import { useExercises } from "../../constants/useExercises";
 import { printPlanPdf } from "../../constants/planPdf";
 import type { PlanPdfItem } from "../../constants/planPdf.types";
+import { getSequenceLevels } from "../../constants/planLevels";
+import { exerciseLevelLabels } from "../../constants/taxonomy";
+
+type ScreenPlan = Plan & { load?: string };
 
 type PlanListItem =
   | { type: "exercise"; id: string; exercise: Exercise }
@@ -132,7 +136,6 @@ function escapeHtml(value: string) {
 function printExerciseHtml(exercise: Exercise, number: string) {
   const details = [
     ["Pozycja wejściowa", exercise.startingPosition],
-    ["Obciążenie", exercise.load],
     ["Sekwencja ruchu", exercise.movementSequence],
     ["Modyfikacje", exercise.modifications],
   ]
@@ -143,22 +146,23 @@ function printExerciseHtml(exercise: Exercise, number: string) {
     )
     .join("");
   const metadata = [
-    exercise.sets ? `<span>${escapeHtml(exercise.sets)}</span>` : "",
-    exercise.level ? `<span>${escapeHtml(exercise.level)}</span>` : "",
-    exercise.bodyAreas.length > 0
-      ? `<span>${escapeHtml(exercise.bodyAreas.join(" · "))}</span>`
+    exercise.level
+      ? `<span class="level-badge">${escapeHtml(exerciseLevelLabels[exercise.level] ?? exercise.level)}</span>`
       : "",
-    exercise.position
-      ? `<span>Pozycja: ${escapeHtml(exercise.position)}</span>`
+    exercise.load.trim()
+      ? `<span class="load-badge">${escapeHtml(exercise.load.trim())}</span>`
+      : "",
+    exercise.position?.trim()
+      ? `<span class="position-badge">${escapeHtml(exercise.position.trim())}</span>`
       : "",
   ]
     .filter(Boolean)
-    .join('<span class="separator">•</span>');
+    .join("");
 
   return `
     <article class="exercise">
       <h3><span class="item-number">${escapeHtml(number)}.</span> ${escapeHtml(exercise.name)}</h3>
-      ${metadata ? `<div class="metadata">${metadata}</div>` : ""}
+      ${metadata ? `<div class="exercise-tags">${metadata}</div>` : ""}
       ${details ? `<div class="details">${details}</div>` : ""}
     </article>
   `;
@@ -171,13 +175,14 @@ export default function PlanDetailScreen({
 }) {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [plan, setPlan] = useState<Plan | null>(null);
+  const [plan, setPlan] = useState<ScreenPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [load, setLoad] = useState("");
   const [content, setContent] = useState<PlanContentItem[]>([]);
   const contentRef = useRef(content);
   const [sequences, setSequences] = useState<Sequence[]>([]);
@@ -281,6 +286,7 @@ export default function PlanDetailScreen({
                   id: currentSequence.id,
                   name: currentSequence.name,
                   description: currentSequence.description,
+                  load: currentSequence.load,
                   content: currentSequence.exerciseIds.map((exerciseId) => ({
                     type: "exercise",
                     id: exerciseId,
@@ -291,6 +297,7 @@ export default function PlanDetailScreen({
           if (currentSequence) {
             setName(currentSequence.name);
             setDescription(currentSequence.description);
+            setLoad(currentSequence.load);
             setContent(
               currentSequence.exerciseIds.map((exerciseId) => ({
                 type: "exercise",
@@ -412,6 +419,7 @@ export default function PlanDetailScreen({
   const startEditing = () => {
     setName(plan.name);
     setDescription(plan.description);
+    setLoad(plan.load ?? "");
     setContent([...plan.content]);
     finishReordering();
     setError("");
@@ -441,10 +449,11 @@ export default function PlanDetailScreen({
     setSaving(true);
     setError("");
     try {
-      const updatedPlan: Plan = {
+      const updatedPlan: ScreenPlan = {
         ...plan,
         name: name.trim(),
         description: description.trim(),
+        ...(kind === "sequence" ? { load: load.trim() } : {}),
         content:
           kind === "plan"
             ? content
@@ -456,6 +465,7 @@ export default function PlanDetailScreen({
           id: updatedPlan.id,
           name: updatedPlan.name,
           description: updatedPlan.description,
+          load: load.trim(),
           exerciseIds: updatedPlan.content
             .filter((item) => item.type === "exercise")
             .map((item) => item.id),
@@ -704,6 +714,8 @@ export default function PlanDetailScreen({
         number: `${itemNumber}`,
         name: item.sequence.name,
         description: item.sequence.description,
+        load: item.sequence.load,
+        levels: getSequenceLevels(item.sequence, exercisesData),
         exercises: item.sequence.exerciseIds
           .map((exerciseId, exerciseIndex) => ({
             number: `${itemNumber}.${exerciseIndex + 1}`,
@@ -733,11 +745,24 @@ export default function PlanDetailScreen({
             exercisesData.find((exercise) => exercise.id === exerciseId),
           )
           .filter((exercise): exercise is Exercise => exercise !== undefined);
+        const sequenceLevels = getSequenceLevels(item.sequence, exercisesData);
+        const sequenceMetadata = [
+          ...sequenceLevels.map(
+            (level) =>
+              `<span class="level-badge">${escapeHtml(exerciseLevelLabels[level] ?? level)}</span>`,
+          ),
+          item.sequence.load.trim()
+            ? `<span class="load-badge">${escapeHtml(item.sequence.load.trim())}</span>`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("");
         return `
         <section class="plan-item sequence-heading">
           <h2 class="item-title">
             <span class="item-number">${itemNumber}.</span> Sekwencja: ${escapeHtml(item.sequence.name)}
           </h2>
+          ${sequenceMetadata ? `<div class="sequence-tags">${sequenceMetadata}</div>` : ""}
           ${
             item.sequence.description
               ? `<p class="sequence-description">${escapeHtml(item.sequence.description)}</p>`
@@ -767,7 +792,7 @@ export default function PlanDetailScreen({
             body {
               color: #202b30;
               font-family: Arial, Helvetica, sans-serif;
-              font-size: 8pt;
+              font-size: 7pt;
               line-height: 1.2;
               margin: 0;
               padding: 9mm 10mm;
@@ -781,7 +806,7 @@ export default function PlanDetailScreen({
             }
             .eyebrow {
               color: #397f78;
-              font-size: 7pt;
+              font-size: 6pt;
               font-weight: 700;
               letter-spacing: 0.8px;
               margin: 0 0 3px;
@@ -789,25 +814,20 @@ export default function PlanDetailScreen({
             }
             h1 {
               color: #173a3a;
-              font-size: 18pt;
+              font-size: 17pt;
               line-height: 1.1;
               margin: 0;
             }
             .plan-description {
               color: #526267;
-              font-size: 8pt;
+              font-size: 7pt;
               margin: 4px 0 0;
               white-space: pre-wrap;
-            }
-            .contents-title {
-              color: #173a3a;
-              font-size: 9pt;
-              margin: 0 0 5px;
             }
             .plan-content {
               column-count: 2;
               column-gap: 8mm;
-              column-fill: balance;
+              column-fill: auto;
             }
             .plan-item {
               border-bottom: 1px solid #dce5e3;
@@ -824,7 +844,7 @@ export default function PlanDetailScreen({
             }
             .item-title {
               color: #397f78;
-              font-size: 8.5pt;
+              font-size: 7.5pt;
               font-weight: 700;
               margin: 0 0 3px;
             }
@@ -835,9 +855,12 @@ export default function PlanDetailScreen({
             }
             .sequence-description {
               color: #526267;
-              font-size: 7.5pt;
+              font-size: 6.5pt;
               margin: 0;
               white-space: pre-wrap;
+            }
+            .sequence-tags {
+              margin: 0 0 3px;
             }
             .exercise {
               margin: 0;
@@ -846,18 +869,35 @@ export default function PlanDetailScreen({
             }
             .exercise h3 {
               color: #202b30;
-              font-size: 8.5pt;
+              font-size: 7.5pt;
               font-weight: 700;
               margin: 0 0 2px;
             }
-            .metadata {
+            .exercise-tags {
+              align-items: center;
               color: #397f78;
-              font-size: 7pt;
+              display: flex;
+              flex-wrap: wrap;
+              gap: 4px;
+              font-size: 6pt;
               font-weight: 600;
-              font-style: italic;
               margin: 0 0 3px;
             }
-            .separator { color: #8a9a9b; padding: 0 2px; }
+            .level-badge {
+              background: #e4f0ed;
+              border-radius: 12px;
+              color: #397f78;
+              padding: 2px 6px;
+            }
+            .load-badge, .position-badge {
+              align-items: center;
+              background: #fff;
+              border: 1px solid #dce5e3;
+              border-radius: 12px;
+              color: #397f78;
+              display: inline-flex;
+              padding: 2px 6px;
+            }
             .details {
               border-left: 1px solid #dce5e3;
               padding-left: 5px;
@@ -865,14 +905,14 @@ export default function PlanDetailScreen({
             .detail { margin: 0 0 2px; }
             .detail strong {
               color: #526267;
-              font-size: 7pt;
+              font-size: 6pt;
               font-weight: 700;
             }
             .detail strong::after { content: ": "; }
             .detail p {
               color: #202b30;
               display: inline;
-              font-size: 7.5pt;
+              font-size: 6.5pt;
               font-weight: 400;
               margin: 0;
               white-space: pre-wrap;
@@ -886,7 +926,6 @@ export default function PlanDetailScreen({
             ${plan.description ? `<p class="plan-description">${escapeHtml(plan.description)}</p>` : ""}
           </header>
           <main>
-            <h2 class="contents-title">Skład planu</h2>
             <div class="plan-content">${itemsHtml}</div>
           </main>
         </body>
@@ -1181,6 +1220,33 @@ export default function PlanDetailScreen({
           </Text>
         )}
       </View>
+      {kind === "sequence" ? (
+        <View style={styles.loadSection}>
+          <Ionicons name="barbell-outline" size={20} color={Colors.primary} />
+          <View style={styles.loadCopy}>
+            <Text style={styles.descriptionTitle}>Obciążenie</Text>
+            {editing ? (
+              <TextInput
+                value={load}
+                onChangeText={setLoad}
+                placeholder="Np. Cz-CzCz"
+                placeholderTextColor={Colors.textSecondary}
+                style={styles.loadInput}
+                accessibilityLabel="Obciążenie sekwencji"
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.description,
+                  !plan.load && styles.emptyDescription,
+                ]}
+              >
+                {plan.load || "Brak obciążenia."}
+              </Text>
+            )}
+          </View>
+        </View>
+      ) : null}
       {editing && error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Text style={styles.sectionTitle}>
@@ -1500,6 +1566,28 @@ const createStyles = (Colors: AppColors) =>
       borderColor: Colors.border,
       padding: Spacing.md,
       marginTop: Spacing.sm,
+    },
+    loadSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      backgroundColor: Colors.cardBackground,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      padding: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    loadCopy: { flex: 1 },
+    loadInput: {
+      minHeight: 40,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: BorderRadius.md,
+      paddingHorizontal: Spacing.sm,
+      color: Colors.textPrimary,
+      backgroundColor: Colors.background,
+      fontSize: 15,
     },
     openExercisePicker: {
       minHeight: 46,

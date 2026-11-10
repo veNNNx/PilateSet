@@ -27,11 +27,11 @@ import { formatPolishCount } from "../../constants/formatting";
 
 type Filters = {
   category: string | null;
-  position: string | null;
+  positions: string[];
   level: string | null;
 };
 
-const emptyFilters: Filters = { category: null, position: null, level: null };
+const emptyFilters: Filters = { category: null, positions: [], level: null };
 
 function getFilteredExercises(
   filters: Filters,
@@ -53,7 +53,9 @@ function getFilteredExercises(
       filters.category === null ||
       exercise.bodyAreas.includes(filters.category);
     const matchesPosition =
-      filters.position === null || exercise.position === filters.position;
+      filters.positions.length === 0 ||
+      (exercise.position != null &&
+        filters.positions.includes(exercise.position));
     const matchesLevel =
       filters.level === null || exercise.level === filters.level;
     const matchesFavorite = !favoritesOnly || isFavorite(exercise.id);
@@ -114,7 +116,7 @@ export default function ExercisesScreen() {
   const openFilters = () => {
     setDraftFilters({
       category: filters.category,
-      position: filters.position,
+      positions: [...filters.positions],
       level: filters.level,
     });
     setFiltersVisible(true);
@@ -137,7 +139,7 @@ export default function ExercisesScreen() {
 
   const activeFilterCount =
     (filters.category === null ? 0 : 1) +
-    (filters.position === null ? 0 : 1) +
+    filters.positions.length +
     (filters.level === null ? 0 : 1);
 
   return (
@@ -215,20 +217,24 @@ export default function ExercisesScreen() {
                 <Text style={styles.activeChipText}>{filters.category} ×</Text>
               </TouchableOpacity>
             )}
-            {filters.position !== null && (
+            {filters.positions.map((position) => (
               <TouchableOpacity
+                key={`position-${position}`}
                 style={styles.activeChip}
                 onPress={() =>
-                  setFilters((current) => ({ ...current, position: null }))
+                  setFilters((current) => ({
+                    ...current,
+                    positions: current.positions.filter(
+                      (item) => item !== position,
+                    ),
+                  }))
                 }
                 accessibilityRole="button"
-                accessibilityLabel={`Usuń filtr pozycji ${filters.position}`}
+                accessibilityLabel={`Usuń filtr pozycji ${position}`}
               >
-                <Text style={styles.activeChipText}>
-                  Pozycja: {filters.position} ×
-                </Text>
+                <Text style={styles.activeChipText}>{position} ×</Text>
               </TouchableOpacity>
-            )}
+            ))}
             {filters.level !== null && (
               <TouchableOpacity
                 style={styles.activeChip}
@@ -340,11 +346,11 @@ export default function ExercisesScreen() {
 
               <Text style={styles.sectionTitle}>Pozycja</Text>
               <Text style={styles.sectionHint}>
-                Pozycja ciała podczas ćwiczenia
+                Możesz wybrać kilka – pokażemy ćwiczenia z dowolnej z nich
               </Text>
               <View style={styles.options}>
                 {exercisePositions.map((position) => {
-                  const selected = draftFilters.position === position;
+                  const selected = draftFilters.positions.includes(position);
                   return (
                     <TouchableOpacity
                       key={position}
@@ -352,10 +358,14 @@ export default function ExercisesScreen() {
                       onPress={() =>
                         setDraftFilters((current) => ({
                           ...current,
-                          position: selected ? null : position,
+                          positions: selected
+                            ? current.positions.filter(
+                                (item) => item !== position,
+                              )
+                            : [...current.positions, position],
                         }))
                       }
-                      accessibilityRole="radio"
+                      accessibilityRole="checkbox"
                       accessibilityState={{ selected }}
                     >
                       <Text

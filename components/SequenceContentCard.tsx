@@ -12,7 +12,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { ExerciseCard } from "./ExerciseCard";
 import { BorderRadius, Spacing } from "../constants/colors";
 import type { Exercise } from "../constants/exercises";
+import { getSequenceLevels } from "../constants/planLevels";
 import { formatPolishCount } from "../constants/formatting";
+import { exerciseLevelLabels } from "../constants/taxonomy";
 import type { Sequence } from "../constants/sequenceStorage";
 import { useAppTheme } from "../constants/useAppTheme";
 
@@ -50,6 +52,9 @@ export function SequenceContentCard({
       exercises.find((exercise) => exercise.id === exerciseId),
     )
     .filter((exercise): exercise is Exercise => exercise !== undefined);
+  const levels = getSequenceLevels(sequence, exercises)
+    .map((level) => exerciseLevelLabels[level] ?? level)
+    .join(" · ");
 
   return (
     <View style={[styles.card, active && styles.activeCard, style]}>
@@ -72,9 +77,30 @@ export function SequenceContentCard({
             color={colors.primary}
           />
           <View style={styles.copy}>
-            <Text style={styles.name} numberOfLines={1}>
-              {sequence.name}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {sequence.name}
+              </Text>
+              <Text style={styles.levels} numberOfLines={1}>
+                {levels || "—"}
+              </Text>
+            </View>
+            {sequence.load ? (
+              <View
+                style={styles.loadBadge}
+                accessible
+                accessibilityLabel={`Obciążenie: ${sequence.load}`}
+              >
+                <Ionicons
+                  name="barbell-outline"
+                  size={12}
+                  color={colors.primaryDark}
+                />
+                <Text style={styles.loadText} numberOfLines={1}>
+                  {sequence.load}
+                </Text>
+              </View>
+            ) : null}
             <Text style={styles.meta}>
               {formatPolishCount(
                 sequenceExercises.length,
@@ -151,6 +177,42 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     copy: {
       flex: 1,
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: Spacing.xs,
+    },
+    levels: {
+      color: colors.primaryDark,
+      backgroundColor: colors.selectedBackground,
+      borderRadius: 12,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      overflow: "hidden",
+      fontSize: 10,
+      fontWeight: "600",
+    },
+    loadBadge: {
+      alignSelf: "flex-start",
+      maxWidth: "100%",
+      marginTop: 2,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+    },
+    loadText: {
+      flexShrink: 1,
+      color: colors.primaryDark,
+      fontSize: 10,
+      fontWeight: "600",
     },
     name: {
       color: colors.textPrimary,

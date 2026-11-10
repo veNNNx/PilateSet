@@ -76,6 +76,7 @@ const sequence = {
   id: "s100",
   name: "Custom",
   description: "",
+  load: "",
   exerciseIds: ["1"],
 };
 const entry = {
@@ -101,6 +102,7 @@ describe("plan and sequence mutations", () => {
           id: "p100",
           name: "Legacy",
           description: "",
+          load: "",
           exerciseIds: ["1", "1", "2"],
           sequenceIds: ["s1"],
           contentOrder: [
@@ -193,6 +195,7 @@ describe("plan and sequence mutations", () => {
           id: "sample-sequence-footwork",
           name: "Legacy",
           description: "",
+          load: "",
           exerciseIds: ["1"],
         },
       ]),

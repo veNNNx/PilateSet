@@ -22,24 +22,11 @@ const requiredExerciseStrings: (keyof BundledExercise)[] = [
   "id",
   "name",
   "level",
-  "sets",
   "load",
   "startingPosition",
   "movementSequence",
   "modifications",
 ];
-const validLegacyPositions = new Set([
-  "Back Seated (pozycja siedząca)",
-  "Front Seated ",
-  "Back Seated ",
-  "Side-sitting ",
-  "Przód",
-  "Plecy",
-  "Tył",
-  "Brzuch",
-  "Bok",
-]);
-
 function imageMapping(): Map<string, Set<string>> {
   const source = readFileSync(
     join(process.cwd(), "constants/exerciseImages.ts"),
@@ -72,6 +59,7 @@ describe("bundled exercise catalog", () => {
     for (const exercise of exercises) {
       for (const field of requiredExerciseStrings)
         expect(typeof exercise[field]).toBe("string");
+      expect(exercise).not.toHaveProperty("sets");
       expect(Array.isArray(exercise.bodyAreas)).toBe(true);
       expect(exercise.bodyAreas.length).toBeGreaterThan(0);
       expect(
@@ -86,10 +74,7 @@ describe("bundled exercise catalog", () => {
     }
   });
 
-  it("accepts app-supported positions and records existing legacy discrepancies", () => {
-    const emptyPositions = exercises
-      .filter((exercise) => !exercise.position)
-      .map((exercise) => exercise.id);
+  it("uses only positions from the position list", () => {
     const unlistedPositions = [
       ...new Set(
         exercises
@@ -101,21 +86,10 @@ describe("bundled exercise catalog", () => {
           ),
       ),
     ];
-    expect(
-      exercises.every(
-        (exercise) =>
-          exercise.position == null || typeof exercise.position === "string",
-      ),
-    ).toBe(true);
-    expect(
-      unlistedPositions.every((position) => validLegacyPositions.has(position)),
-    ).toBe(true);
-    if (emptyPositions.length || unlistedPositions.length) {
-      console.warn(
-        `Bundled-data discrepancies: empty positions [${emptyPositions.join(", ")}]; non-taxonomy positions [${unlistedPositions.join(", ")}].`,
-      );
-    }
+    expect(unlistedPositions).toEqual([]);
+  });
 
+  it("keeps body areas aligned with the taxonomy", () => {
     const canonicalAreas = new Map(
       bodyAreas.map((area) => [area.toLocaleLowerCase(), area]),
     );

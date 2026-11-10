@@ -44,6 +44,7 @@ export default function NewPlanScreen({
   const { exercises: exercisesData } = useExercises();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [load, setLoad] = useState("");
   const [content, setContent] = useState<PlanContentItem[]>([]);
   const [expandedSequenceIds, setExpandedSequenceIds] = useState<Set<string>>(
     new Set(),
@@ -70,6 +71,7 @@ export default function NewPlanScreen({
       let active = true;
       setName("");
       setDescription("");
+      setLoad("");
       setContent([]);
       setExpandedSequenceIds(new Set());
       setExercisePickerVisible(false);
@@ -132,6 +134,7 @@ export default function NewPlanScreen({
           id,
           name: normalizedName,
           description: description.trim(),
+          load: load.trim(),
           exerciseIds: selectedIds,
         });
         navigateBack("/sequences");
@@ -286,6 +289,27 @@ export default function NewPlanScreen({
           accessibilityHint="Opis zostanie zapisany i będzie widoczny na liście oraz w szczegółach"
         />
 
+        {kind === "sequence" ? (
+          <>
+            <Text style={styles.label}>Obciążenie (opcjonalnie)</Text>
+            <View style={styles.loadInputRow}>
+              <Ionicons
+                name="barbell-outline"
+                size={20}
+                color={Colors.primary}
+              />
+              <TextInput
+                value={load}
+                onChangeText={setLoad}
+                placeholder="Np. Cz-CzCz"
+                placeholderTextColor={Colors.textSecondary}
+                style={styles.loadInput}
+                accessibilityLabel="Obciążenie sekwencji"
+              />
+            </View>
+          </>
+        ) : null}
+
         <View style={styles.sectionTitleRow}>
           <Text style={styles.label}>
             Skład {kind === "plan" ? "planu" : "sekwencji"}
@@ -427,6 +451,22 @@ const createStyles = (Colors: AppColors) =>
       color: Colors.textPrimary,
     },
     descriptionInput: { minHeight: 76, paddingTop: Spacing.md },
+    loadInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: BorderRadius.md,
+      backgroundColor: Colors.cardBackground,
+      paddingHorizontal: Spacing.md,
+    },
+    loadInput: {
+      flex: 1,
+      minHeight: 44,
+      color: Colors.textPrimary,
+      fontSize: 16,
+    },
     sectionTitleRow: {
       flexDirection: "row",
       alignItems: "center",

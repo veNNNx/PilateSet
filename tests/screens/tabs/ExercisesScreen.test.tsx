@@ -86,7 +86,9 @@ describe("Exercises tab", () => {
     await render(<ExercisesScreen />);
     await fireEvent.press(screen.getByLabelText("Filtry"));
     await fireEvent.press(screen.getByRole("radio", { name: "Początkujący" }));
-    await fireEvent.press(screen.getByText("Supine (plecy)"));
+    await fireEvent.press(
+      screen.getByRole("checkbox", { name: "Supine (plecy)" }),
+    );
     await fireEvent.press(screen.getByText("nogi"));
     await fireEvent.press(screen.getByText("Pokaż 1 ćwiczenie"));
     expect(screen.getByText("Alpha Press")).toBeTruthy();
@@ -100,6 +102,24 @@ describe("Exercises tab", () => {
       screen.getByLabelText("Usuń filtr pozycji Supine (plecy)"),
     );
     expect(screen.getByText("Charlie Reach")).toBeTruthy();
+  });
+
+  it("matches exercises with any of several selected positions", async () => {
+    await render(<ExercisesScreen />);
+    await fireEvent.press(screen.getByLabelText("Filtry"));
+    await fireEvent.press(
+      screen.getByRole("checkbox", { name: "Supine (plecy)" }),
+    );
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Side-lying" }));
+    await fireEvent.press(screen.getByText("Pokaż 2 ćwiczenia"));
+    expect(screen.getByText("Alpha Press")).toBeTruthy();
+    expect(screen.getByText("Bravo Rotation")).toBeTruthy();
+    expect(screen.queryByText("Charlie Reach")).toBeNull();
+    await fireEvent.press(
+      screen.getByLabelText("Usuń filtr pozycji Supine (plecy)"),
+    );
+    expect(screen.queryByText("Alpha Press")).toBeNull();
+    expect(screen.getByText("Bravo Rotation")).toBeTruthy();
   });
 
   it("clears draft filters, dismisses the sheet, and reports empty results", async () => {

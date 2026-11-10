@@ -39,7 +39,6 @@ import exercisePositions from "../../data/exercisePositions.json";
 type ExerciseDraft = Pick<
   Exercise,
   | "name"
-  | "sets"
   | "load"
   | "startingPosition"
   | "movementSequence"
@@ -141,7 +140,6 @@ export default function ExerciseDetailScreen() {
     if (!exercise) return;
     setDraft({
       name: exercise.name,
-      sets: exercise.sets,
       load: exercise.load,
       startingPosition: exercise.startingPosition,
       movementSequence: exercise.movementSequence,
@@ -168,7 +166,6 @@ export default function ExerciseDetailScreen() {
         ...exercise,
         ...draft,
         name,
-        sets: draft.sets.trim(),
         load: draft.load.trim(),
         startingPosition: draft.startingPosition.trim(),
         movementSequence: draft.movementSequence.trim(),
@@ -325,7 +322,6 @@ export default function ExerciseDetailScreen() {
             )}
           </View>
         </View>
-        {/* 1. Tytuł i serie/powtórzenia w jednej linii */}
         <View style={styles.headerRow}>
           {draft ? (
             <TextInput
@@ -343,22 +339,6 @@ export default function ExerciseDetailScreen() {
           ) : (
             <Text style={styles.title}>{exercise.name}</Text>
           )}
-          {draft ? (
-            <TextInput
-              value={draft.sets}
-              onChangeText={(sets) =>
-                setDraft((current) =>
-                  current ? { ...current, sets } : current,
-                )
-              }
-              placeholder="Serie"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.setsInput}
-              accessibilityLabel="Serie i powtórzenia"
-            />
-          ) : exercise.sets ? (
-            <Text style={styles.setsText}>{exercise.sets}</Text>
-          ) : null}
         </View>
 
         {draft ? (
@@ -779,22 +759,6 @@ const createStyles = (colors: AppColors) =>
       backgroundColor: colors.cardBackground,
       paddingHorizontal: 10,
       paddingVertical: 6,
-    },
-    setsText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: colors.primary,
-    },
-    setsInput: {
-      minWidth: 70,
-      maxWidth: 110,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      backgroundColor: colors.cardBackground,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      color: colors.textPrimary,
     },
     editorFilters: {
       gap: 8,

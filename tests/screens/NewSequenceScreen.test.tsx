@@ -22,6 +22,10 @@ describe("New sequence screen", () => {
       screen.getByLabelText("Opis sekwencji"),
       "  Slow and calm  ",
     );
+    await fireEvent.changeText(
+      screen.getByLabelText("Obciążenie sekwencji"),
+      "  Cz-CzCz  ",
+    );
     await fireEvent.press(screen.getByLabelText("Dodaj ćwiczenia"));
     await fireEvent.press(
       await screen.findByRole("checkbox", {
@@ -37,6 +41,7 @@ describe("New sequence screen", () => {
       id: "s101",
       name: "Steady flow",
       description: "Slow and calm",
+      load: "Cz-CzCz",
       exerciseIds: [exercise.id],
     });
     expect(mocks.navigateBack).toHaveBeenCalledWith("/sequences");

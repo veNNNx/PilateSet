@@ -36,7 +36,6 @@ describe("Plan detail screen", () => {
     const sparseExercise = {
       ...exercise,
       name: `A & <B> \"quoted\" 'name'`,
-      sets: "",
       level: "",
       bodyAreas: [],
       position: null,

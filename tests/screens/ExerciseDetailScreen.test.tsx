@@ -85,10 +85,6 @@ describe("Exercise detail screen", () => {
       "  Edited press  ",
     );
     await fireEvent.changeText(
-      screen.getByLabelText("Serie i powtórzenia"),
-      "  3× 8  ",
-    );
-    await fireEvent.changeText(
       screen.getByLabelText("Pozycja wejściowa"),
       "  Start  ",
     );
@@ -115,7 +111,6 @@ describe("Exercise detail screen", () => {
         expect.objectContaining({
           id: exercise.id,
           name: "Edited press",
-          sets: "3× 8",
           load: "Heavy",
           startingPosition: "Start",
           movementSequence: "Move",

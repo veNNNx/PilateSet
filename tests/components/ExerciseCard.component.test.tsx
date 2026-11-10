@@ -10,6 +10,7 @@ import { setTestTheme } from "./testTheme";
 jest.mock("../../constants/useAppTheme", () =>
   jest.requireActual("./testTheme"),
 );
+jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("../../constants/exercises", () => ({
   __esModule: true,
   default:
@@ -41,14 +42,27 @@ describe("ExerciseCard", () => {
     await render(<ExerciseCard exercise={exercise} />);
 
     expect(screen.getByText(exercise.name)).toBeTruthy();
-    expect(screen.getByText(exercise.sets)).toBeTruthy();
-    expect(screen.getByText(exercise.level)).toBeTruthy();
-    expect(screen.getByText("Pozycja: Supine (plecy)")).toBeTruthy();
+    expect(screen.getByText("P1")).toBeTruthy();
+    expect(screen.queryByText(exercise.level)).toBeNull();
+    expect(screen.getByText(exercise.load)).toBeTruthy();
+    expect(screen.getByLabelText(`Obciążenie: ${exercise.load}`)).toBeTruthy();
+    expect(screen.getByText("Supine (plecy)")).toBeTruthy();
     expect(screen.getByText("nogi · mięśnie brzucha")).toBeTruthy();
     expect(screen.getByTestId("exercise-card-image").props.source).toEqual(
       getExerciseImage(exercise.id, exercise.images[0]),
     );
     expect(screen.getByRole("button", { name: exercise.name })).toBeTruthy();
+  });
+
+  it.each([
+    ["Początkujący", "P1"],
+    ["Średniozaawansowany", "P2"],
+    ["Zaawansowany", "P3"],
+  ])("shows %s as level %s", async (level, label) => {
+    const levelExercise = { ...exercise, level };
+    await render(<ExerciseCard exercise={levelExercise} />);
+    expect(screen.getByText(label)).toBeTruthy();
+    expect(screen.queryByText(level)).toBeNull();
   });
 
   it("forwards press and long-press events, custom accessibility and opacity", async () => {
@@ -109,7 +123,7 @@ describe("ExerciseCard", () => {
   it("uses dark theme colors for dark cards", async () => {
     setTestTheme(true);
     await render(<ExerciseCard exercise={exercise} />);
-    const position = screen.getByText("Pozycja: Supine (plecy)");
+    const position = screen.getByText("Supine (plecy)");
     expect(JSON.stringify(position.props.style)).toContain(
       getColors(true).textSecondary,
     );

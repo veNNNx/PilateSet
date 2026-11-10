@@ -21,7 +21,6 @@ function isExercise(value: unknown): value is Exercise {
       exercise.position === null ||
       exercise.position === undefined) &&
     typeof exercise.level === "string" &&
-    typeof exercise.sets === "string" &&
     Array.isArray(exercise.images) &&
     exercise.images.every((image) => typeof image === "string") &&
     typeof exercise.load === "string" &&
@@ -39,12 +38,17 @@ async function loadExerciseOverrides(): Promise<Exercise[]> {
   if (!Array.isArray(parsedValue) || !parsedValue.every(isExercise)) {
     throw new Error("Zapis zmian ćwiczeń jest nieprawidłowy.");
   }
+  const normalizedExercises = parsedValue.map((exercise) => {
+    const normalized = { ...exercise } as Exercise & { sets?: unknown };
+    delete normalized.sets;
+    return normalized;
+  });
   const ids = new Set<string>();
   const initialIds = new Set(
     initialExerciseList.map((exercise) => exercise.id),
   );
   const activeOverrides: Exercise[] = [];
-  for (const exercise of parsedValue) {
+  for (const exercise of normalizedExercises) {
     if (removedExerciseIds.has(exercise.id)) continue;
     if (!initialIds.has(exercise.id) || ids.has(exercise.id)) {
       throw new Error(
@@ -78,9 +82,13 @@ export async function saveExercise(
   }
 
   const overrides = await loadExerciseOverrides();
+  const updatedExerciseWithoutSets = { ...updatedExercise } as Exercise & {
+    sets?: unknown;
+  };
+  delete updatedExerciseWithoutSets.sets;
   const updatedOverrides = [
     ...overrides.filter((exercise) => exercise.id !== updatedExercise.id),
-    updatedExercise,
+    updatedExerciseWithoutSets,
   ];
   await writeJsonFile(
     STORAGE_FILE,
