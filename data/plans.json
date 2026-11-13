@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "p1",
+    "name": "Grupa Podstawowa",
+    "description": "Wzmocnienie mięśni brzucha",
+    "content": [
+      { "type": "sequence", "id": "s2" },
+      { "type": "sequence", "id": "s1" },
+      { "type": "exercise", "id": "35" },
+      { "type": "exercise", "id": "34" }
+    ]
+  }
+]

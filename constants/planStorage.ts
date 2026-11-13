@@ -22,7 +22,15 @@ const retiredInitialPlanIds = new Set([
   "advanced-reformer-flow",
 ]);
 
-const initialPlans: Plan[] = rawInitialPlans;
+const initialPlans: Plan[] = rawInitialPlans.map((plan) => ({
+  ...plan,
+  content: plan.content.map((item) => {
+    if (item.type !== "exercise" && item.type !== "sequence") {
+      throw new Error("Bundled plan content is invalid.");
+    }
+    return { type: item.type, id: item.id };
+  }),
+}));
 
 export interface Plan {
   id: string;

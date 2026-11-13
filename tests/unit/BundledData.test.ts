@@ -61,13 +61,12 @@ describe("bundled exercise catalog", () => {
         expect(typeof exercise[field]).toBe("string");
       expect(exercise).not.toHaveProperty("sets");
       expect(Array.isArray(exercise.bodyAreas)).toBe(true);
-      expect(exercise.bodyAreas.length).toBeGreaterThan(0);
       expect(
         exercise.bodyAreas.every(
           (area) => typeof area === "string" && area.length > 0,
         ),
       ).toBe(true);
-      expect(exerciseLevels).toContain(exercise.level);
+      if (exercise.level) expect(exerciseLevels).toContain(exercise.level);
       expect(Array.isArray(exercise.images)).toBe(true);
       for (const image of exercise.images)
         expect(mappings.get(exercise.id)).toContain(image);

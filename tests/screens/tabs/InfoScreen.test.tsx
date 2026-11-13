@@ -154,7 +154,7 @@ describe("Info tab", () => {
         "exercise-notes.json": [],
         "sequence-notes.json": [],
         "plans.json": [],
-        "sequences.json": [],
+        "sequences.json": [sequence],
         "calendar.json": [],
         exportedAt: expect.any(String),
       }),

@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "s1",
+    "name": "Footwork",
+    "description": "Typowy footwork z zajec",
+    "load": "",
+    "exerciseIds": ["1", "3", "4", "2"]
+  },
+  {
+    "id": "s2",
+    "name": "4point series",
+    "description": "",
+    "load": "",
+    "exerciseIds": ["12", "13"]
+  }
+]

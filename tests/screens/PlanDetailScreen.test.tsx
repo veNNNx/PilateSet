@@ -169,7 +169,7 @@ describe("Plan detail screen", () => {
       },
     ]);
     mocks.loadSequences.mockResolvedValueOnce([
-      { ...sequence, exerciseIds: [secondExercise.id, "missing"] },
+      { ...sequence, load: "", exerciseIds: [secondExercise.id, "missing"] },
     ]);
     await render(<PlanDetailScreen />);
     await screen.findByText(plan.name);

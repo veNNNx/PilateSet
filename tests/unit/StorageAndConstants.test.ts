@@ -5,7 +5,10 @@ import {
   loadNotes,
   saveDeletedIds,
 } from "../../constants/storageHelpers";
-import { getExerciseImage } from "../../constants/exerciseImages";
+import {
+  EXERCISE_IMAGES,
+  getExerciseImage,
+} from "../../constants/exerciseImages";
 import {
   getPlanExerciseIds,
   getPlanLevels,
@@ -153,7 +156,7 @@ describe("ID maps and plan levels", () => {
 
 describe("images and theme constants", () => {
   it("returns the mapped image or a stable placeholder fallback", () => {
-    expect(getExerciseImage("1", "1.jpg")).toBeDefined();
+    expect(getExerciseImage("1", "1.jpg")).toBe(EXERCISE_IMAGES["1"]["1.jpg"]);
     expect(getExerciseImage("missing", "no.jpg")).toEqual({
       uri: "https://via.placeholder.com/150",
     });
