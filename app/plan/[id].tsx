@@ -34,7 +34,9 @@ import {
   loadSequences,
   updateSequence,
   type Sequence,
+  type SequenceContentItem,
 } from "../../constants/sequenceStorage";
+import { getSequenceContent } from "../../constants/sequenceContent";
 import { navigateBack } from "../../constants/navigation";
 import {
   loadSequenceNotes,
@@ -45,6 +47,11 @@ import exerciseLevels from "../../data/exerciseLevels.json";
 import { useFavorites } from "../../constants/useFavorites";
 import { FavoriteButton } from "../../components/FavoriteButton";
 import { ExerciseCard } from "../../components/ExerciseCard";
+import {
+  ExerciseInfoButton,
+  useExerciseInfo,
+} from "../../components/ExerciseInfo";
+import { PlanNoteCard } from "../../components/PlanNoteCard";
 import { SequenceContentCard } from "../../components/SequenceContentCard";
 import { ScreenMessage } from "../../components/ScreenMessage";
 import { PlanContentPicker } from "../../components/PlanContentPicker";
@@ -58,10 +65,13 @@ type ScreenPlan = Plan & { load?: string };
 
 type PlanListItem =
   | { type: "exercise"; id: string; exercise: Exercise }
-  | { type: "sequence"; id: string; sequence: Sequence };
+  | { type: "sequence"; id: string; sequence: Sequence }
+  | { type: "note"; id: string; text: string };
+type OrderedItemIdentity = { type: PlanContentItem["type"]; id: string };
 
 type ReorderablePlanItemProps = {
-  armed: boolean;
+  itemKey: string;
+  activeItemKeyRef: { current: string | null };
   onMove: (pageY: number) => void;
   onRelease: (pageY?: number) => void;
   onLayout: (event: LayoutChangeEvent) => void;
@@ -70,27 +80,26 @@ type ReorderablePlanItemProps = {
 };
 
 function ReorderablePlanItem({
-  armed,
+  itemKey,
+  activeItemKeyRef,
   onMove,
   onRelease,
   onLayout,
   testID,
   children,
 }: ReorderablePlanItemProps) {
-  const armedRef = useRef(false);
   const callbacks = useRef({ onMove, onRelease });
   const [panHandlers, setPanHandlers] = useState<
     ReturnType<typeof PanResponder.create>["panHandlers"] | null
   >(null);
   useEffect(() => {
-    armedRef.current = armed;
     callbacks.current = { onMove, onRelease };
-  }, [armed, onMove, onRelease]);
+  }, [onMove, onRelease]);
   useEffect(() => {
     const responder = PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponderCapture: (_event, gestureState) =>
-        armedRef.current && Math.abs(gestureState.dy) > 4,
+        activeItemKeyRef.current === itemKey && Math.abs(gestureState.dy) > 4,
       onPanResponderMove: (_event, gestureState) =>
         callbacks.current.onMove(gestureState.moveY),
       onPanResponderRelease: (_event, gestureState) =>
@@ -100,7 +109,7 @@ function ReorderablePlanItem({
       onPanResponderTerminationRequest: () => false,
     });
     setPanHandlers(responder.panHandlers);
-  }, []);
+  }, [activeItemKeyRef, itemKey]);
 
   return (
     <View
@@ -217,6 +226,7 @@ export default function PlanDetailScreen({
     globalStyles,
     typography: Typography,
   } = useAppTheme();
+  const { showExerciseInfo, popup: exerciseInfoPopup } = useExerciseInfo();
   const { exercises: exercisesData } = useExercises();
   const {
     isFavorite,
@@ -272,6 +282,13 @@ export default function PlanDetailScreen({
           if (!isActive) return;
           const currentSequence =
             loadedSequences.find((item) => item.id === id) ?? null;
+          const sequenceContent = currentSequence
+            ? getSequenceContent(currentSequence).map((item) =>
+                item.type === "note"
+                  ? item
+                  : { type: "exercise" as const, id: item.id },
+              )
+            : [];
           setSequences([]);
           setRelatedPlans(
             plans.filter((item) =>
@@ -287,10 +304,7 @@ export default function PlanDetailScreen({
                   name: currentSequence.name,
                   description: currentSequence.description,
                   load: currentSequence.load,
-                  content: currentSequence.exerciseIds.map((exerciseId) => ({
-                    type: "exercise",
-                    id: exerciseId,
-                  })),
+                  content: sequenceContent,
                 }
               : null,
           );
@@ -298,12 +312,7 @@ export default function PlanDetailScreen({
             setName(currentSequence.name);
             setDescription(currentSequence.description);
             setLoad(currentSequence.load);
-            setContent(
-              currentSequence.exerciseIds.map((exerciseId) => ({
-                type: "exercise",
-                id: exerciseId,
-              })),
-            );
+            setContent(sequenceContent);
           }
           setError(currentSequence ? "" : "Nie znaleziono sekwencji.");
           if (currentSequence) {
@@ -399,6 +408,10 @@ export default function PlanDetailScreen({
       if (exercise) items.push({ type: "exercise", id: item.id, exercise });
       return items;
     }
+    if (item.type === "note") {
+      items.push({ type: "note", id: item.id, text: item.text });
+      return items;
+    }
     const sequence = sequences.find((candidate) => candidate.id === item.id);
     if (sequence) items.push({ type: "sequence", id: item.id, sequence });
     return items;
@@ -436,11 +449,13 @@ export default function PlanDetailScreen({
 
     if (
       exerciseIds.length === 0 &&
-      (kind === "sequence" || sequenceIds.length === 0)
+      (kind === "sequence" ||
+        (sequenceIds.length === 0 &&
+          !content.some((item) => item.type === "note")))
     ) {
       setError(
         kind === "plan"
-          ? "Plan musi zawierać co najmniej jedno ćwiczenie lub sekwencję."
+          ? "Plan musi zawierać co najmniej jedno ćwiczenie, sekwencję lub notatkę."
           : "Sekwencja musi zawierać co najmniej jedno ćwiczenie.",
       );
       return;
@@ -454,21 +469,30 @@ export default function PlanDetailScreen({
         name: name.trim(),
         description: description.trim(),
         ...(kind === "sequence" ? { load: load.trim() } : {}),
-        content:
-          kind === "plan"
-            ? content
-            : content.filter((item) => item.type === "exercise"),
+        content,
       };
       if (kind === "plan") await updatePlan(updatedPlan);
       else {
+        const sequenceContent: SequenceContentItem[] = [];
+        for (const item of content) {
+          if (item.type === "exercise")
+            sequenceContent.push({ type: "exercise", id: item.id });
+          else if (item.type === "note")
+            sequenceContent.push({
+              type: "note",
+              id: item.id,
+              text: item.text,
+            });
+        }
         const updatedSequence: Sequence = {
           id: updatedPlan.id,
           name: updatedPlan.name,
           description: updatedPlan.description,
           load: load.trim(),
-          exerciseIds: updatedPlan.content
+          exerciseIds: sequenceContent
             .filter((item) => item.type === "exercise")
             .map((item) => item.id),
+          content: sequenceContent,
         };
         await updateSequence(updatedSequence);
       }
@@ -515,7 +539,7 @@ export default function PlanDetailScreen({
     );
   };
 
-  const removeOrderedItem = (item: PlanContentItem) => {
+  const removeOrderedItem = (item: OrderedItemIdentity) => {
     setContent((current) =>
       current.filter(
         (currentItem) =>
@@ -532,6 +556,22 @@ export default function PlanDetailScreen({
       )
         ? current
         : [...current, item],
+    );
+  };
+
+  const addNote = () => {
+    let id: string;
+    do {
+      id = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    } while (content.some((item) => item.type === "note" && item.id === id));
+    addOrderedItem({ type: "note", id, text: "" });
+  };
+
+  const updateNote = (id: string, text: string) => {
+    setContent((current) =>
+      current.map((item) =>
+        item.type === "note" && item.id === id ? { ...item, text } : item,
+      ),
     );
   };
 
@@ -701,6 +741,9 @@ export default function PlanDetailScreen({
   const printPlan = async () => {
     const pdfItems: PlanPdfItem[] = orderedContent.map((item, itemIndex) => {
       const itemNumber = itemIndex + 1;
+      if (item.type === "note") {
+        return { type: "note", number: `${itemNumber}`, text: item.text };
+      }
       if (item.type === "exercise") {
         return {
           type: "exercise",
@@ -732,6 +775,16 @@ export default function PlanDetailScreen({
     const itemsHtml = orderedContent
       .map((item, itemIndex) => {
         const itemNumber = itemIndex + 1;
+        if (item.type === "note") {
+          return `
+          <section class="plan-item note">
+            <h2 class="item-title">
+              <span class="item-number">${itemNumber}.</span> Notatka
+            </h2>
+            <p class="sequence-description">${escapeHtml(item.text)}</p>
+          </section>
+        `;
+        }
         if (item.type === "exercise") {
           return `
           <section class="plan-item direct-exercise">
@@ -949,11 +1002,15 @@ export default function PlanDetailScreen({
 
   const renderItemActions = (item: PlanListItem) => {
     const itemLabel =
-      item.type === "exercise" ? item.exercise.name : item.sequence.name;
+      item.type === "exercise"
+        ? item.exercise.name
+        : item.type === "sequence"
+          ? item.sequence.name
+          : "notatkę";
     return (
       <View style={styles.itemActions}>
         <TouchableOpacity
-          onPress={() => removeOrderedItem({ type: item.type, id: item.id })}
+          onPress={() => removeOrderedItem(item)}
           accessibilityRole="button"
           accessibilityLabel={`Usuń ${itemLabel} z ${kind === "plan" ? "planu" : "sekwencji"}`}
           hitSlop={8}
@@ -971,6 +1028,19 @@ export default function PlanDetailScreen({
   const renderPlanItem = (item: PlanListItem) => {
     const itemKey = `${item.type}:${item.id}`;
     const isActive = draggedItemKey === itemKey;
+    if (item.type === "note") {
+      return (
+        <PlanNoteCard
+          text={item.text}
+          onChangeText={
+            editing ? (text) => updateNote(item.id, text) : undefined
+          }
+          onLongPress={editing ? () => beginReordering(item) : undefined}
+          trailing={editing ? renderItemActions(item) : undefined}
+          active={isActive}
+        />
+      );
+    }
     if (item.type === "exercise") {
       return (
         <ExerciseCard
@@ -988,7 +1058,17 @@ export default function PlanDetailScreen({
           }
           activeOpacity={editing ? 0.8 : 0.7}
           style={isActive ? styles.draggedCard : undefined}
-          trailing={editing ? renderItemActions(item) : null}
+          trailing={
+            editing ? (
+              <>
+                <ExerciseInfoButton
+                  exercise={item.exercise}
+                  onPress={() => showExerciseInfo(item.exercise)}
+                />
+                {renderItemActions(item)}
+              </>
+            ) : null
+          }
         />
       );
     }
@@ -1068,13 +1148,30 @@ export default function PlanDetailScreen({
                 <Text style={styles.addActionText}>Sekwencja</Text>
               </TouchableOpacity>
             ) : null}
+            <TouchableOpacity
+              style={styles.addActionButton}
+              onPress={addNote}
+              accessibilityRole="button"
+              accessibilityLabel={`Dodaj notatkę do ${kind === "plan" ? "planu" : "sekwencji"}`}
+            >
+              <Ionicons
+                name="document-text-outline"
+                size={19}
+                color={Colors.primary}
+              />
+              <Text style={styles.addActionText}>Notatka</Text>
+            </TouchableOpacity>
           </View>
         </>
       ) : null}
       {kind === "sequence" ? (
         <View style={styles.sequenceNoteCard}>
           <View style={styles.sequenceNoteHeading}>
-            <Ionicons name="create-outline" size={18} color={Colors.primary} />
+            <Ionicons
+              name="document-text-outline"
+              size={18}
+              color={Colors.primary}
+            />
             <Text style={styles.sequenceNoteTitle}>Moja notatka</Text>
           </View>
           <TextInput
@@ -1254,7 +1351,8 @@ export default function PlanDetailScreen({
       </Text>
       {editing ? (
         <Text style={styles.editHint}>
-          Przytrzymaj kafelek i przeciągnij, aby zmienić kolejność.
+          Przytrzymaj kafelek ćwiczenia lub sekwencji albo ikonę notatki i
+          przeciągnij, aby zmienić kolejność.
         </Text>
       ) : null}
     </View>
@@ -1385,7 +1483,8 @@ export default function PlanDetailScreen({
           return (
             <ReorderablePlanItem
               key={itemKey}
-              armed={draggedItemKey === itemKey}
+              itemKey={itemKey}
+              activeItemKeyRef={draggedItemKeyRef}
               onMove={reorderAtPageY}
               onRelease={finishReordering}
               onLayout={(event) => handleItemLayout(itemKey, event)}
@@ -1408,6 +1507,7 @@ export default function PlanDetailScreen({
         ) : null}
         {listFooter}
       </ScrollView>
+      {exerciseInfoPopup}
       <PlanContentPicker
         visible={editing && addExercisesVisible}
         type="exercise"

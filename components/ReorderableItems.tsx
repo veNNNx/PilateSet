@@ -40,6 +40,8 @@ function ReorderableRow<T>({
   onRelease,
   onLayout,
   testID,
+  itemKey,
+  activeKeyRef,
 }: {
   armed: boolean;
   item: T;
@@ -50,45 +52,46 @@ function ReorderableRow<T>({
   onRelease: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
   testID: string;
+  itemKey: string;
+  activeKeyRef: { current: string | null };
 }) {
-  const armedRef = useRef(armed);
   const callbacksRef = useRef({ onMove, onRelease, onLongPress });
   const [panHandlers, setPanHandlers] = useState<
     ReturnType<typeof PanResponder.create>["panHandlers"] | null
   >(null);
+  const handleRelease = useCallback(() => {
+    if (activeKeyRef.current !== itemKey) return;
+    callbacksRef.current.onRelease();
+  }, [activeKeyRef, itemKey]);
 
   useEffect(() => {
-    armedRef.current = armed;
     callbacksRef.current = { onMove, onRelease, onLongPress };
-  }, [armed, onLongPress, onMove, onRelease]);
+  }, [onLongPress, onMove, onRelease]);
 
   useEffect(() => {
     const responder = PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponderCapture: (_event, gestureState) =>
-        armedRef.current && Math.abs(gestureState.dy) > 4,
+        activeKeyRef.current === itemKey && Math.abs(gestureState.dy) > 4,
       onPanResponderMove: (_event, gestureState) =>
         callbacksRef.current.onMove(gestureState.dy),
-      onPanResponderRelease: () => callbacksRef.current.onRelease(),
-      onPanResponderTerminate: () => callbacksRef.current.onRelease(),
+      onPanResponderRelease: handleRelease,
+      onPanResponderTerminate: handleRelease,
       onPanResponderTerminationRequest: () => false,
     });
     setPanHandlers(responder.panHandlers);
-  }, []);
+  }, [activeKeyRef, handleRelease, itemKey]);
   const handleChildLongPress = useCallback(
     (event: GestureResponderEvent) => onLongPress(item, index, event),
     [index, item, onLongPress],
   );
-
   return (
     <View
       {...(panHandlers ?? {})}
       onLayout={onLayout}
       testID={testID}
-      onTouchEnd={() => {
-        if (armedRef.current) callbacksRef.current.onRelease();
-      }}
-      onTouchCancel={() => callbacksRef.current.onRelease()}
+      onTouchEnd={handleRelease}
+      onTouchCancel={handleRelease}
     >
       {renderItem({
         item,
@@ -230,6 +233,8 @@ export function ReorderableItems<T>({
             onMove={moveDrag}
             onRelease={finishDrag}
             onLayout={(event) => handleItemLayout(key, event)}
+            itemKey={key}
+            activeKeyRef={activeKeyRef}
             testID={`reorderable-row:${key}`}
           />
         );

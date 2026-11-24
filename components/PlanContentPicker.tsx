@@ -16,6 +16,7 @@ import type { Exercise } from "../constants/exercises";
 import type { PlanContentItem } from "../constants/planStorage";
 import type { Sequence } from "../constants/sequenceStorage";
 import { useFavorites } from "../constants/useFavorites";
+import { ExerciseInfoButton, useExerciseInfo } from "./ExerciseInfo";
 import { ExerciseCard } from "./ExerciseCard";
 import { FavoriteIndicator } from "./FavoriteIndicator";
 import { SequenceCard } from "./SequenceCard";
@@ -25,7 +26,7 @@ import exercisePositions from "../data/exercisePositions.json";
 
 type PlanContentPickerProps = {
   visible: boolean;
-  type: PlanContentItem["type"];
+  type: "exercise" | "sequence";
   owner?: "plan" | "sequence";
   exercises: Exercise[];
   sequences: Sequence[];
@@ -56,6 +57,15 @@ export function PlanContentPicker({
   const [level, setLevel] = useState<string | null>(null);
   const [position, setPosition] = useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const {
+    showExerciseInfo,
+    closeExerciseInfo,
+    popup: exerciseInfoPopup,
+  } = useExerciseInfo();
+  const closePicker = () => {
+    closeExerciseInfo();
+    onClose();
+  };
 
   const selectedIds = useMemo(
     () =>
@@ -156,12 +166,12 @@ export function PlanContentPicker({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={closePicker}
     >
       <View style={styles.root}>
         <Pressable
           style={styles.backdrop}
-          onPress={onClose}
+          onPress={closePicker}
           accessibilityRole="button"
           accessibilityLabel="Zamknij wybór"
         />
@@ -176,7 +186,7 @@ export function PlanContentPicker({
               </Text>
             </View>
             <TouchableOpacity
-              onPress={onClose}
+              onPress={closePicker}
               accessibilityRole="button"
               accessibilityLabel="Zamknij"
             >
@@ -296,6 +306,10 @@ export function PlanContentPicker({
                     style={styles.exerciseCard}
                     trailing={
                       <>
+                        <ExerciseInfoButton
+                          exercise={exercise}
+                          onPress={() => showExerciseInfo(exercise)}
+                        />
                         <FavoriteIndicator
                           favorite={isFavorite("exercise", exercise.id)}
                           label={exercise.name}
@@ -355,6 +369,7 @@ export function PlanContentPicker({
             }
           />
         </View>
+        {exerciseInfoPopup}
       </View>
     </Modal>
   );

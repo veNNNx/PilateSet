@@ -4,7 +4,18 @@
     "name": "Footwork",
     "description": "Typowy footwork z zajec",
     "load": "",
-    "exerciseIds": ["1", "3", "4", "2"]
+    "exerciseIds": ["1", "3", "4", "2"],
+    "content": [
+      { "type": "exercise", "id": "1" },
+      {
+        "type": "note",
+        "id": "note-1",
+        "text": "Zachowaj spokojny oddech podczas całej serii."
+      },
+      { "type": "exercise", "id": "3" },
+      { "type": "exercise", "id": "4" },
+      { "type": "exercise", "id": "2" }
+    ]
   },
   {
     "id": "s2",

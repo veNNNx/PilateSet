@@ -241,7 +241,7 @@ describe("Plan creation", () => {
 
     expect(
       screen.getByText(
-        "Uzupełnij nazwę planu i dodaj ćwiczenie lub sekwencję.",
+        "Uzupełnij nazwę planu i dodaj ćwiczenie, sekwencję lub notatkę.",
       ),
     ).toBeTruthy();
     expect(savePlan).not.toHaveBeenCalled();
@@ -392,6 +392,7 @@ describe("Sequence creation", () => {
       description: "",
       load: "",
       exerciseIds: [exercise.id],
+      content: [{ type: "exercise", id: exercise.id }],
     });
     expect(navigateBack).toHaveBeenCalledWith("/sequences");
   });
@@ -711,6 +712,100 @@ describe("Plan and sequence details", () => {
     });
   });
 
+  it.each(["plan", "sequence"] as const)(
+    "allows a note to be reordered while creating a %s",
+    async (kind) => {
+      const isPlan = kind === "plan";
+      await render(isPlan ? <NewPlanScreen /> : <NewSequenceScreen />);
+      await fireEvent.changeText(
+        screen.getByLabelText(isPlan ? "Nazwa planu" : "Nazwa sekwencji"),
+        "Ordered",
+      );
+      await fireEvent.press(screen.getByLabelText("Dodaj ćwiczenia"));
+      await fireEvent.press(
+        await screen.findByRole("checkbox", {
+          name: `Dodaj ${exercises[0].name} do ${isPlan ? "planu" : "sekwencji"}`,
+        }),
+      );
+      await fireEvent.press(screen.getByRole("button", { name: "Zamknij" }));
+      await fireEvent.press(
+        screen.getByLabelText(
+          `Dodaj notatkę do ${isPlan ? "planu" : "sekwencji"}`,
+        ),
+      );
+      await fireEvent.changeText(
+        screen.getByLabelText("Treść notatki"),
+        "Move this note",
+      );
+
+      const exerciseRow = screen.getByTestId(
+        `reorderable-row:exercise:${exercises[0].id}`,
+      );
+      const noteRow = screen.getByTestId(/reorderable-row:note:/);
+      exerciseRow.props.onLayout({
+        nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 100 } },
+      });
+      noteRow.props.onLayout({
+        nativeEvent: { layout: { x: 0, y: 100, width: 300, height: 72 } },
+      });
+
+      await fireEvent(
+        within(noteRow).getByRole("button", {
+          name: "Notatka, przytrzymaj aby zmienić kolejność",
+        }),
+        "longPress",
+        { nativeEvent: { locationY: 30 } },
+      );
+      await act(async () => {
+        noteRow.props.onResponderMove({
+          touchHistory: {
+            mostRecentTimeStamp: 10,
+            numberActiveTouches: 1,
+            indexOfSingleActiveTouch: 0,
+            touchBank: [
+              {
+                touchActive: true,
+                currentTimeStamp: 10,
+                currentPageX: 0,
+                currentPageY: 10,
+                previousPageX: 0,
+                previousPageY: 130,
+              },
+            ],
+          },
+        });
+      });
+      await act(async () => {
+        noteRow.props.onResponderRelease({});
+      });
+
+      await fireEvent.press(
+        screen.getByRole("button", {
+          name: isPlan ? "Zapisz nowy plan" : "Zapisz nową sekwencję",
+        }),
+      );
+      const expectedContent = [
+        expect.objectContaining({
+          type: "note",
+          text: "Move this note",
+        }),
+        { type: "exercise", id: exercises[0].id },
+      ];
+      if (isPlan) {
+        expect(savePlan).toHaveBeenCalledWith(
+          expect.objectContaining({ content: expectedContent }),
+        );
+      } else {
+        expect(saveSequence).toHaveBeenCalledWith(
+          expect.objectContaining({
+            exerciseIds: [exercises[0].id],
+            content: expectedContent,
+          }),
+        );
+      }
+    },
+  );
+
   it("keeps plan items visible in edit mode and enables hold-to-reorder", async () => {
     const secondExercise = exercises[1];
     jest.mocked(loadPlans).mockResolvedValue([
@@ -731,7 +826,7 @@ describe("Plan and sequence details", () => {
     expect(screen.getByText(secondExercise.name)).toBeTruthy();
     expect(
       screen.getByText(
-        "Przytrzymaj kafelek i przeciągnij, aby zmienić kolejność.",
+        "Przytrzymaj kafelek ćwiczenia lub sekwencji albo ikonę notatki i przeciągnij, aby zmienić kolejność.",
       ),
     ).toBeTruthy();
     expect(
@@ -861,6 +956,98 @@ describe("Plan and sequence details", () => {
       }),
     );
   });
+
+  it.each(["plan", "sequence"] as const)(
+    "allows a note to be reordered while editing a %s",
+    async (kind) => {
+      const isPlan = kind === "plan";
+      const note = { type: "note" as const, id: "note-move", text: "Move me" };
+      if (isPlan) {
+        jest.mocked(loadPlans).mockResolvedValue([
+          {
+            ...plan,
+            content: [{ type: "exercise", id: exercise.id }, note],
+          },
+        ]);
+      } else {
+        jest.mocked(useLocalSearchParams).mockReturnValue({ id: sequence.id });
+        jest.mocked(loadSequences).mockResolvedValue([
+          {
+            ...sequence,
+            exerciseIds: [exercise.id],
+            content: [{ type: "exercise", id: exercise.id }, note],
+          },
+        ]);
+      }
+
+      await render(isPlan ? <PlanDetailScreen /> : <SequenceDetailScreen />);
+      await screen.findByText(isPlan ? plan.name : sequence.name);
+      await fireEvent.press(
+        screen.getByRole("button", {
+          name: isPlan ? "Edytuj plan" : "Edytuj sekwencję",
+        }),
+      );
+
+      const exerciseRow = screen.getByTestId(
+        `reorder-item:exercise:${exercise.id}`,
+      );
+      const noteRow = screen.getByTestId("reorder-item:note:note-move");
+      exerciseRow.props.onLayout({
+        nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 100 } },
+      });
+      noteRow.props.onLayout({
+        nativeEvent: { layout: { x: 0, y: 100, width: 300, height: 72 } },
+      });
+
+      await fireEvent(
+        within(noteRow).getByRole("button", {
+          name: "Notatka, przytrzymaj aby zmienić kolejność",
+        }),
+        "longPress",
+      );
+      await act(async () => {
+        noteRow.props.onResponderMove({
+          touchHistory: {
+            mostRecentTimeStamp: 10,
+            numberActiveTouches: 1,
+            indexOfSingleActiveTouch: 0,
+            touchBank: [
+              {
+                touchActive: true,
+                currentTimeStamp: 10,
+                currentPageX: 0,
+                currentPageY: 10,
+                previousPageX: 0,
+                previousPageY: 130,
+              },
+            ],
+          },
+        });
+      });
+      await act(async () => {
+        noteRow.props.onResponderRelease({}, { moveY: 10 });
+      });
+      await fireEvent.press(
+        screen.getByRole("button", {
+          name: isPlan ? "Zapisz zmiany planu" : "Zapisz zmiany sekwencji",
+        }),
+      );
+
+      const expectedContent = [note, { type: "exercise", id: exercise.id }];
+      if (isPlan) {
+        expect(updatePlan).toHaveBeenCalledWith(
+          expect.objectContaining({ content: expectedContent }),
+        );
+      } else {
+        expect(updateSequence).toHaveBeenCalledWith(
+          expect.objectContaining({
+            exerciseIds: [exercise.id],
+            content: expectedContent,
+          }),
+        );
+      }
+    },
+  );
 
   it("renders the sequence route and saves a personal sequence note", async () => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ id: "s100" });

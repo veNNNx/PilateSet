@@ -89,7 +89,7 @@ describe("Plan detail screen", () => {
     );
     expect(
       screen.getByText(
-        "Plan musi zawierać co najmniej jedno ćwiczenie lub sekwencję.",
+        "Plan musi zawierać co najmniej jedno ćwiczenie, sekwencję lub notatkę.",
       ),
     ).toBeTruthy();
     await fireEvent.press(screen.getByText("Ćwiczenie"));
@@ -193,6 +193,99 @@ describe("Plan detail screen", () => {
       ),
     );
     alertSpy.mockRestore();
+  });
+
+  it("edits and saves a plan note alongside its ordered content", async () => {
+    const note = { type: "note" as const, id: "note-1", text: "Before" };
+    mocks.loadPlans.mockResolvedValueOnce([
+      { ...plan, content: [note, { type: "exercise", id: exercise.id }] },
+    ]);
+    await render(<PlanDetailScreen />);
+    await screen.findByText(plan.name);
+    await fireEvent.press(screen.getByRole("button", { name: "Edytuj plan" }));
+    await fireEvent.changeText(
+      screen.getByLabelText("Treść notatki"),
+      "Updated cue",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Zapisz zmiany planu" }),
+    );
+
+    expect(mocks.updatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [
+          { type: "note", id: "note-1", text: "Updated cue" },
+          { type: "exercise", id: exercise.id },
+        ],
+      }),
+    );
+  });
+
+  it("removes a note from a plan while editing", async () => {
+    mocks.loadPlans.mockResolvedValueOnce([
+      {
+        ...plan,
+        content: [
+          { type: "note", id: "note-1", text: "Remove this cue" },
+          { type: "exercise", id: exercise.id },
+        ],
+      },
+    ]);
+    await render(<PlanDetailScreen />);
+    await screen.findByText(plan.name);
+    await fireEvent.press(screen.getByRole("button", { name: "Edytuj plan" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Usuń notatkę z planu" }),
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Zapisz zmiany planu" }),
+    );
+    expect(mocks.updatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [{ type: "exercise", id: exercise.id }],
+      }),
+    );
+  });
+
+  it("shows exercise details from the selected tile while editing a plan", async () => {
+    mocks.loadPlans.mockResolvedValueOnce([
+      {
+        ...plan,
+        content: [{ type: "exercise", id: exercise.id }],
+      },
+    ]);
+    await render(<PlanDetailScreen />);
+    await screen.findByText(plan.name);
+    await fireEvent.press(screen.getByRole("button", { name: "Edytuj plan" }));
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: `Pokaż informacje o ćwiczeniu ${exercise.name}`,
+      }),
+    );
+
+    expect(screen.getByTestId("exercise-info-popup")).toBeTruthy();
+    expect(screen.getByText(exercise.startingPosition)).toBeTruthy();
+  });
+
+  it("keeps long notes collapsed initially and allows expanding them", async () => {
+    const longNote = "Remember to breathe calmly. ".repeat(8);
+    mocks.loadPlans.mockResolvedValueOnce([
+      {
+        ...plan,
+        content: [{ type: "note", id: "note-long", text: longNote }],
+      },
+    ]);
+    await render(<PlanDetailScreen />);
+    await screen.findByText(plan.name);
+    expect(screen.getByText(longNote).props.numberOfLines).toBe(3);
+    expect(screen.getByRole("button", { name: "Rozwiń notatkę" })).toBeTruthy();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Rozwiń notatkę" }),
+    );
+    expect(screen.getByRole("button", { name: "Zwiń notatkę" })).toBeTruthy();
+    expect(screen.getByText(longNote).props.numberOfLines).toBeUndefined();
   });
 
   it("uses the browser PDF download path and reports a failed download", async () => {

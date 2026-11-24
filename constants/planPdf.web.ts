@@ -195,6 +195,23 @@ function printableBlocks(items: PlanPdfItem[]): PrintableBlock[] {
   const blocks: PrintableBlock[] = [];
 
   for (const item of items) {
+    if (item.type === "note") {
+      blocks.push(
+        atomicBlock(
+          [
+            {
+              text: [
+                { text: `${item.number}. `, color: colors.accent },
+                { text: item.text || "Notatka", color: colors.text },
+              ],
+              style: "sequenceDescription",
+            },
+          ],
+          estimateWrappedLines(item.text || "Notatka", 90) * 7.5 + 6,
+        ),
+      );
+      continue;
+    }
     if (item.type === "exercise") {
       blocks.push(
         atomicBlock(

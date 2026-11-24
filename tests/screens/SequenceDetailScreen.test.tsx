@@ -44,7 +44,14 @@ describe("Sequence detail screen", () => {
   it("edits content and description, displays save errors, and recovers after retry", async () => {
     mocks.useLocalSearchParams.mockReturnValue({ id: sequence.id });
     mocks.loadSequences.mockResolvedValueOnce([
-      { ...sequence, exerciseIds: [exercise.id, secondExercise.id] },
+      {
+        ...sequence,
+        exerciseIds: [exercise.id, secondExercise.id],
+        content: [
+          { type: "exercise", id: exercise.id },
+          { type: "exercise", id: secondExercise.id },
+        ],
+      },
     ]);
     mocks.updateSequence.mockRejectedValueOnce(
       new Error("Sequence cannot be edited"),
@@ -67,6 +74,13 @@ describe("Sequence detail screen", () => {
       " Cz-CzCz ",
     );
     await fireEvent.press(
+      screen.getByRole("button", { name: "Dodaj notatkę do sekwencji" }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Treść notatki"),
+      "Keep a steady breath",
+    );
+    await fireEvent.press(
       screen.getByRole("button", {
         name: `Usuń ${secondExercise.name} z sekwencji`,
       }),
@@ -84,9 +98,41 @@ describe("Sequence detail screen", () => {
       description: "New description",
       load: "Cz-CzCz",
       exerciseIds: [exercise.id],
+      content: [
+        { type: "exercise", id: exercise.id },
+        expect.objectContaining({
+          type: "note",
+          text: "Keep a steady breath",
+        }),
+      ],
     });
     expect(screen.getByText("Updated flow")).toBeTruthy();
     expect(screen.getByText("Cz-CzCz")).toBeTruthy();
+  });
+
+  it("shows exercise details from the selected tile while editing a sequence", async () => {
+    mocks.useLocalSearchParams.mockReturnValue({ id: sequence.id });
+    mocks.loadSequences.mockResolvedValueOnce([
+      {
+        ...sequence,
+        exerciseIds: [exercise.id],
+        content: [{ type: "exercise", id: exercise.id }],
+      },
+    ]);
+    await render(<SequenceDetailScreen />);
+    await screen.findByText(sequence.name);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Edytuj sekwencję" }),
+    );
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: `Pokaż informacje o ćwiczeniu ${exercise.name}`,
+      }),
+    );
+
+    expect(screen.getByTestId("exercise-info-popup")).toBeTruthy();
+    expect(screen.getByText(exercise.startingPosition)).toBeTruthy();
   });
 
   it("saves an empty note as removal and reports note storage errors", async () => {

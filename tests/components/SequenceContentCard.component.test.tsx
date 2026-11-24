@@ -173,6 +173,36 @@ describe("SequenceContentCard", () => {
     expect(screen.getByRole("button", { name: "Bravo Rotation" })).toBeTruthy();
   });
 
+  it("renders sequence notes in order between expanded exercises", async () => {
+    const { toJSON } = await render(
+      <SequenceContentCard
+        sequence={{
+          ...sequence,
+          exerciseIds: ["1", "2"],
+          content: [
+            { type: "exercise", id: "1" },
+            { type: "note", id: "note-1", text: "Pause and breathe" },
+            { type: "exercise", id: "2" },
+          ],
+        }}
+        exercises={exercises}
+        expanded
+        onToggle={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Pause and breathe")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Alpha Press" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Bravo Rotation" })).toBeTruthy();
+    const rendered = JSON.stringify(toJSON());
+    expect(rendered.indexOf("Alpha Press")).toBeLessThan(
+      rendered.indexOf("Pause and breathe"),
+    );
+    expect(rendered.indexOf("Pause and breathe")).toBeLessThan(
+      rendered.indexOf("Bravo Rotation"),
+    );
+  });
+
   it("uses dark colors for active sequence cards", async () => {
     setTestTheme(true);
     const { toJSON } = await render(

@@ -23,6 +23,7 @@ describe("Calendar entry details screen", () => {
       {
         ...plan,
         content: [
+          { type: "note", id: "note-1", text: "Remember to breathe" },
           { type: "exercise", id: exercise.id },
           { type: "sequence", id: sequence.id },
         ],
@@ -35,6 +36,7 @@ describe("Calendar entry details screen", () => {
     expect(await screen.findByText("Szczegóły treningu")).toBeTruthy();
     expect(screen.getByText("Evening session")).toBeTruthy();
     expect(screen.getByText("Test plan")).toBeTruthy();
+    expect(screen.getByText("Remember to breathe")).toBeTruthy();
     expect(screen.getByText(exercise.name)).toBeTruthy();
     await fireEvent.press(
       screen.getByRole("button", { name: `Rozwiń sekwencję ${sequence.name}` }),

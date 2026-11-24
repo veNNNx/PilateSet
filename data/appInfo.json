@@ -1,12 +1,17 @@
 {
-  "version": "1.0.5",
+  "version": "1.1.0",
   "releaseDate": "2026-11-06",
   "description": "PilateSet pomaga układać treningi Pilates, poznawać ćwiczenia i planować regularne sesje.\nDane pozostają na Twoim urządzeniu.",
   "changelog": [
     {
+      "version": "1.1.0",
+      "date": "2026-11-24",
+      "message": "Dodanie info ćwiczenia w edycji i tworzeniu planu i sekwencji. Dodanie notatki jako elementu sekwencji i planu."
+    },
+    {
       "version": "1.0.5",
       "date": "2026-11-13",
-      "message": "Dodanie ćwiczeń, usunięcie nieużywanych przykładowych zdjęć z ćwiczeń"
+      "message": "Dodanie ćwiczeń, usunięcie nieużywanych przykładowych zdjęć z ćwiczeń."
     },
     {
       "version": "1.0.4",
@@ -16,7 +21,7 @@
     {
       "version": "1.0.3",
       "date": "2026-11-06",
-      "message": "Dodanie właściwego presetu ćwiczeń, możliwość wyłączenia zdjęć oraz import danych do aplikacji"
+      "message": "Dodanie właściwego presetu ćwiczeń, możliwość wyłączenia zdjęć oraz import danych do aplikacji."
     },
     {
       "version": "1.0.2",
@@ -26,7 +31,7 @@
     {
       "version": "1.0.1",
       "date": "2026-10-28",
-      "message": "Powstanie aplikacji"
+      "message": "Powstanie aplikacji."
     }
   ]
 }

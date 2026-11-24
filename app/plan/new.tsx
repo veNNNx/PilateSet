@@ -23,15 +23,23 @@ import {
   loadSequences,
   saveSequence,
   type Sequence,
+  type SequenceContentItem,
 } from "../../constants/sequenceStorage";
 import { navigateBack } from "../../constants/navigation";
 import { getJsonFileLocation } from "../../constants/jsonFileStorage";
 import { ExerciseCard } from "../../components/ExerciseCard";
+import {
+  ExerciseInfoButton,
+  useExerciseInfo,
+} from "../../components/ExerciseInfo";
+import { PlanNoteCard } from "../../components/PlanNoteCard";
 import { SequenceContentCard } from "../../components/SequenceContentCard";
 import { PlanContentPicker } from "../../components/PlanContentPicker";
 import { ReorderableItems } from "../../components/ReorderableItems";
 import { useExercises } from "../../constants/useExercises";
 import { formatPolishCount } from "../../constants/formatting";
+
+let nextPlanNoteId = 0;
 
 export default function NewPlanScreen({
   kind = "plan",
@@ -39,6 +47,7 @@ export default function NewPlanScreen({
   kind?: "plan" | "sequence";
 }) {
   const { colors: Colors, globalStyles } = useAppTheme();
+  const { showExerciseInfo, popup: exerciseInfoPopup } = useExerciseInfo();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(Colors), [Colors]);
   const { exercises: exercisesData } = useExercises();
@@ -110,16 +119,33 @@ export default function NewPlanScreen({
     );
   };
 
+  const addNote = () => {
+    setContent((current) => {
+      let id: string;
+      do {
+        nextPlanNoteId += 1;
+        id = `note-${Date.now()}-${nextPlanNoteId}`;
+      } while (current.some((item) => item.type === "note" && item.id === id));
+      return [...current, { type: "note", id, text: "" }];
+    });
+  };
+
+  const updateNote = (id: string, text: string) => {
+    setContent((current) =>
+      current.map((item) =>
+        item.type === "note" && item.id === id ? { ...item, text } : item,
+      ),
+    );
+  };
+
   const save = async () => {
     const normalizedName = name.trim();
     const hasContent =
-      kind === "plan"
-        ? selectedIds.length > 0 || selectedSequenceIds.length > 0
-        : selectedIds.length > 0;
+      kind === "plan" ? content.length > 0 : selectedIds.length > 0;
     if (!normalizedName || !hasContent) {
       setError(
         kind === "plan"
-          ? "Uzupełnij nazwę planu i dodaj ćwiczenie lub sekwencję."
+          ? "Uzupełnij nazwę planu i dodaj ćwiczenie, sekwencję lub notatkę."
           : "Uzupełnij nazwę sekwencji i wybierz co najmniej jedno ćwiczenie.",
       );
       return;
@@ -130,12 +156,24 @@ export default function NewPlanScreen({
     try {
       if (kind === "sequence") {
         const id = await getNextSequenceId();
+        const sequenceContent: SequenceContentItem[] = [];
+        for (const item of content) {
+          if (item.type === "exercise")
+            sequenceContent.push({ type: "exercise", id: item.id });
+          else if (item.type === "note")
+            sequenceContent.push({
+              type: "note",
+              id: item.id,
+              text: item.text,
+            });
+        }
         await saveSequence({
           id,
           name: normalizedName,
           description: description.trim(),
           load: load.trim(),
           exerciseIds: selectedIds,
+          content: sequenceContent,
         });
         navigateBack("/sequences");
       } else {
@@ -185,10 +223,43 @@ export default function NewPlanScreen({
             dragging ? styles.draggingItem : undefined,
           ]}
           trailing={
+            <>
+              <ExerciseInfoButton
+                exercise={exercise}
+                onPress={() => showExerciseInfo(exercise)}
+              />
+              <TouchableOpacity
+                onPress={() => toggleContent(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Usuń ćwiczenie ${exercise.name} z ${kind === "plan" ? "planu" : "sekwencji"}`}
+              >
+                <Ionicons name="close-circle" size={20} color={Colors.danger} />
+              </TouchableOpacity>
+            </>
+          }
+        />
+      );
+    }
+
+    if (item.type === "note") {
+      return (
+        <PlanNoteCard
+          text={item.text}
+          onChangeText={(text) => updateNote(item.id, text)}
+          onLongPress={onLongPress}
+          active={dragging}
+          trailing={
             <TouchableOpacity
-              onPress={() => toggleContent(item)}
+              onPress={() =>
+                setContent((current) =>
+                  current.filter(
+                    (entry) => entry.id !== item.id || entry.type !== "note",
+                  ),
+                )
+              }
               accessibilityRole="button"
-              accessibilityLabel={`Usuń ćwiczenie ${exercise.name} z ${kind === "plan" ? "planu" : "sekwencji"}`}
+              accessibilityLabel={`Usuń notatkę z ${kind === "plan" ? "planu" : "sekwencji"}`}
+              hitSlop={8}
             >
               <Ionicons name="close-circle" size={20} color={Colors.danger} />
             </TouchableOpacity>
@@ -324,6 +395,14 @@ export default function NewPlanScreen({
             {kind === "plan"
               ? ` · ${selectedSequenceIds.length} sekwencji`
               : ""}
+            {content.some((item) => item.type === "note")
+              ? ` · ${formatPolishCount(
+                  content.filter((item) => item.type === "note").length,
+                  "notatka",
+                  "notatki",
+                  "notatek",
+                )}`
+              : ""}
           </Text>
         </View>
         <View style={styles.addActions}>
@@ -355,12 +434,26 @@ export default function NewPlanScreen({
               <Text style={styles.addActionText}>Sekwencja</Text>
             </TouchableOpacity>
           ) : null}
+          <TouchableOpacity
+            style={styles.addActionButton}
+            onPress={addNote}
+            accessibilityRole="button"
+            accessibilityLabel={`Dodaj notatkę do ${kind === "plan" ? "planu" : "sekwencji"}`}
+          >
+            <Ionicons
+              name="document-text-outline"
+              size={19}
+              color={Colors.primary}
+            />
+            <Text style={styles.addActionText}>Notatka</Text>
+          </TouchableOpacity>
         </View>
 
         {content.length > 0 ? (
           <>
             <Text style={styles.hint}>
-              Przytrzymaj kafelek i przeciągnij, aby zmienić kolejność.
+              Przytrzymaj kafelek ćwiczenia lub sekwencji albo ikonę notatki i
+              przeciągnij, aby zmienić kolejność.
             </Text>
             <ReorderableItems
               items={content}
@@ -373,8 +466,8 @@ export default function NewPlanScreen({
         ) : (
           <Text style={styles.emptyText}>
             {kind === "plan"
-              ? "Dodaj ćwiczenia lub sekwencje do planu."
-              : "Dodaj ćwiczenia do sekwencji."}
+              ? "Dodaj ćwiczenia, sekwencje lub notatki do planu."
+              : "Dodaj ćwiczenia lub notatki do sekwencji."}
           </Text>
         )}
 
@@ -389,6 +482,7 @@ export default function NewPlanScreen({
         </View>
       </ScrollView>
 
+      {exerciseInfoPopup}
       <PlanContentPicker
         visible={exercisePickerVisible}
         type="exercise"
@@ -499,11 +593,11 @@ const createStyles = (Colors: AppColors) =>
     },
     addActionText: { color: Colors.primary, fontSize: 14, fontWeight: "700" },
     selectedItem: {
-      marginBottom: Spacing.xs,
+      marginBottom: Spacing.sm,
       backgroundColor: Colors.cardBackground,
       borderColor: Colors.border,
     },
-    selectedSequence: { marginBottom: Spacing.xs },
+    selectedSequence: { marginBottom: Spacing.sm },
     draggingItem: {
       backgroundColor: Colors.selectedBackground,
       borderColor: Colors.primary,

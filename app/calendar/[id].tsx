@@ -23,6 +23,7 @@ import { getPlanLevels } from "../../constants/planLevels";
 import { loadSequences, type Sequence } from "../../constants/sequenceStorage";
 import { useExercises } from "../../constants/useExercises";
 import { ExerciseCard } from "../../components/ExerciseCard";
+import { PlanNoteCard } from "../../components/PlanNoteCard";
 import { formatHour, formatLongDateKey } from "../../constants/dateUtils";
 import { SequenceContentCard } from "../../components/SequenceContentCard";
 
@@ -225,6 +226,14 @@ export default function CalendarEntryDetailsScreen() {
                 <Text style={styles.planDescriptionTitle}>Skład planu</Text>
                 <View style={styles.planContent}>
                   {plan.content.map((item, index) => {
+                    if (item.type === "note") {
+                      return (
+                        <PlanNoteCard
+                          key={`note:${item.id}:${index}`}
+                          text={item.text}
+                        />
+                      );
+                    }
                     if (item.type === "exercise") {
                       const exercise = exercisesData.find(
                         (candidate) => candidate.id === item.id,

@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react-native";
 import { getColors } from "../../constants/colors";
 import exercises from "../../constants/exercises";
@@ -174,6 +175,48 @@ describe("PlanContentPicker", () => {
     );
     expect(screen.getByText("Charlie Reach")).toBeTruthy();
     expect(screen.queryByText("Alpha Press")).toBeNull();
+  });
+
+  it("shows available exercise details in a dismissible popup without selecting it", async () => {
+    const onToggle = jest.fn();
+    const exerciseWithoutModifications = {
+      ...exercises[0],
+      modifications: "",
+    };
+    await renderPicker({
+      exercises: [exerciseWithoutModifications],
+      onToggle,
+    });
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: `Pokaż informacje o ćwiczeniu ${exerciseWithoutModifications.name}`,
+      }),
+    );
+
+    const popup = screen.getByTestId("exercise-info-popup");
+    expect(popup).toBeTruthy();
+    expect(screen.getByText("Informacje o ćwiczeniu")).toBeTruthy();
+    expect(
+      within(popup).getByText(exerciseWithoutModifications.name),
+    ).toBeTruthy();
+    expect(within(popup).getByText("Pozycja wejściowa")).toBeTruthy();
+    expect(
+      within(popup).getByText(exerciseWithoutModifications.startingPosition),
+    ).toBeTruthy();
+    expect(within(popup).getByText("Sekwencja ruchu")).toBeTruthy();
+    expect(
+      within(popup).getByText(exerciseWithoutModifications.movementSequence),
+    ).toBeTruthy();
+    expect(within(popup).queryByText("Modyfikacje")).toBeNull();
+    expect(onToggle).not.toHaveBeenCalled();
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: "Zamknij popup informacji o ćwiczeniu",
+      }),
+    );
+    expect(screen.queryByTestId("exercise-info-popup")).toBeNull();
   });
 
   it("shows favorites including selected items and keeps selected items ordered first", async () => {

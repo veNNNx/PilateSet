@@ -11,9 +11,19 @@ import calendar from "../../data/calendar.json";
 type BundledExercise = (typeof exercises)[number];
 type BundledPlan = {
   id: string;
-  content: { type: "exercise" | "sequence"; id: string }[];
+  content: (
+    | { type: "exercise" | "sequence"; id: string }
+    | { type: "note"; id: string; text: string }
+  )[];
 };
-type BundledSequence = { id: string; exerciseIds: string[] };
+type BundledSequence = {
+  id: string;
+  exerciseIds: string[];
+  content?: (
+    | { type: "exercise"; id: string }
+    | { type: "note"; id: string; text: string }
+  )[];
+};
 type BundledCalendarEntry = { id: string; date: string; planId: string };
 const bundledPlans = plans as BundledPlan[];
 const bundledSequences = sequences as BundledSequence[];
@@ -129,17 +139,29 @@ describe("bundled plan, sequence, and calendar references", () => {
     for (const plan of bundledPlans) {
       expect(plan.id).toMatch(/^p[1-9]\d*$/);
       for (const item of plan.content) {
-        expect(
-          item.type === "exercise"
-            ? exerciseIds.has(item.id)
-            : sequenceIds.has(item.id),
-        ).toBe(true);
+        if (item.type === "note") {
+          expect(item.id).toEqual(expect.any(String));
+          expect(item.text).toEqual(expect.any(String));
+        } else {
+          expect(
+            item.type === "exercise"
+              ? exerciseIds.has(item.id)
+              : sequenceIds.has(item.id),
+          ).toBe(true);
+        }
       }
     }
     for (const sequence of bundledSequences) {
       expect(sequence.id).toMatch(/^s[1-9]\d*$/);
       for (const exerciseId of sequence.exerciseIds)
         expect(exerciseIds.has(exerciseId)).toBe(true);
+      for (const item of sequence.content ?? []) {
+        if (item.type === "note") {
+          expect(item.text).toEqual(expect.any(String));
+        } else {
+          expect(exerciseIds.has(item.id)).toBe(true);
+        }
+      }
     }
     for (const entry of bundledCalendar) {
       expect(entry.id).toMatch(/^c[1-9]\d*$/);

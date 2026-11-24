@@ -113,6 +113,19 @@ describe("plan storage", () => {
       "Zapis planów jest nieprawidłowy.",
     );
   });
+
+  it("preserves note text and order when saving and loading a plan", async () => {
+    const plan: Plan = {
+      ...customPlan,
+      content: [
+        { type: "note", id: "note-1", text: "Keep the spine long" },
+        { type: "exercise", id: "1" },
+      ],
+    };
+    await savePlan(plan);
+    const loadedPlan = (await loadPlans()).find((item) => item.id === plan.id);
+    expect(loadedPlan?.content).toEqual(plan.content);
+  });
 });
 
 describe("sequence storage", () => {
@@ -121,6 +134,9 @@ describe("sequence storage", () => {
       (initialSequences as object[]).map((sequence) => ({
         ...sequence,
         load: "",
+        content: (sequence as { exerciseIds: string[] }).exerciseIds.map(
+          (id) => ({ type: "exercise", id }),
+        ),
       })),
     );
     expect(await getNextSequenceId()).toBe(`s${initialSequences.length + 1}`);
@@ -132,6 +148,7 @@ describe("sequence storage", () => {
     expect(await loadSequences()).toContainEqual({
       ...legacySequence,
       load: "",
+      content: [{ type: "exercise", id: "1" }],
     });
   });
 
@@ -140,7 +157,10 @@ describe("sequence storage", () => {
       saveSequence({ ...customSequence, id: "invalid" }),
     ).rejects.toThrow("Identyfikator sekwencji musi mieć format s1, s2, s3…");
     await saveSequence(customSequence);
-    expect(await loadSequences()).toContainEqual(customSequence);
+    expect(await loadSequences()).toContainEqual({
+      ...customSequence,
+      content: [{ type: "exercise", id: "1" }],
+    });
 
     contents.set(
       "pilateset.sequences.v1",
@@ -149,6 +169,22 @@ describe("sequence storage", () => {
     await expect(loadSequences()).rejects.toThrow(
       "Zapis sekwencji jest nieprawidłowy.",
     );
+  });
+
+  it("preserves note text and sequence order when saving and loading", async () => {
+    const sequence = {
+      ...customSequence,
+      exerciseIds: ["1", "2"],
+      content: [
+        { type: "exercise" as const, id: "1" },
+        { type: "note" as const, id: "note-1", text: "Pause here" },
+        { type: "exercise" as const, id: "2" },
+      ],
+    };
+    await saveSequence(sequence);
+    expect(
+      (await loadSequences()).find((item) => item.id === sequence.id),
+    ).toMatchObject(sequence);
   });
 });
 

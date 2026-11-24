@@ -524,7 +524,11 @@ export default function ExerciseDetailScreen() {
 
         <View style={styles.noteCard}>
           <View style={styles.noteHeading}>
-            <Ionicons name="create-outline" size={18} color={colors.primary} />
+            <Ionicons
+              name="document-text-outline"
+              size={18}
+              color={colors.primary}
+            />
             <Text style={styles.noteTitle}>Moja notatka</Text>
           </View>
           <TextInput

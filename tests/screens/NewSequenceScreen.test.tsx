@@ -1,11 +1,13 @@
-import { mocks, exercise } from "./testHarness";
+import { mocks, exercise, secondExercise } from "./testHarness";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import NewSequenceScreen from "../../app/sequence/new";
 
 describe("New sequence screen", () => {
   it("requires a name and exercise, then saves a trimmed sequence to its own route", async () => {
     await render(<NewSequenceScreen />);
-    expect(screen.getByText("Dodaj ćwiczenia do sekwencji.")).toBeTruthy();
+    expect(
+      screen.getByText("Dodaj ćwiczenia lub notatki do sekwencji."),
+    ).toBeTruthy();
     await fireEvent.press(
       screen.getByRole("button", { name: "Zapisz nową sekwencję" }),
     );
@@ -33,6 +35,18 @@ describe("New sequence screen", () => {
       }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Zamknij" }));
+    await fireEvent.press(screen.getByLabelText("Dodaj notatkę do sekwencji"));
+    await fireEvent.changeText(
+      screen.getByLabelText("Treść notatki"),
+      "Keep a steady breath",
+    );
+    await fireEvent.press(screen.getByLabelText("Dodaj ćwiczenia"));
+    await fireEvent.press(
+      await screen.findByRole("checkbox", {
+        name: `Dodaj ${secondExercise.name} do sekwencji`,
+      }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Zamknij" }));
     expect(screen.queryByLabelText("Dodaj sekwencję do planu")).toBeNull();
     await fireEvent.press(
       screen.getByRole("button", { name: "Zapisz nową sekwencję" }),
@@ -42,7 +56,16 @@ describe("New sequence screen", () => {
       name: "Steady flow",
       description: "Slow and calm",
       load: "Cz-CzCz",
-      exerciseIds: [exercise.id],
+      exerciseIds: [exercise.id, secondExercise.id],
+      content: [
+        { type: "exercise", id: exercise.id },
+        {
+          type: "note",
+          id: expect.any(String),
+          text: "Keep a steady breath",
+        },
+        { type: "exercise", id: secondExercise.id },
+      ],
     });
     expect(mocks.navigateBack).toHaveBeenCalledWith("/sequences");
   });

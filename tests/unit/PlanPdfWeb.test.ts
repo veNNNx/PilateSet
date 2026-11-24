@@ -103,6 +103,20 @@ describe("web PDF planner helpers", () => {
     expect(mockDownload).toHaveBeenCalledWith("plan-treningowy.pdf");
   });
 
+  it("includes note text in the printable plan", async () => {
+    await printPlanPdf({
+      name: "Notes",
+      description: "",
+      html: "",
+      items: [{ type: "note", number: "1", text: "Remember to breathe" }],
+    });
+
+    const definition = mockCreatePdf.mock.calls[0][0] as {
+      content: unknown[];
+    };
+    expect(JSON.stringify(definition.content)).toContain("Remember to breathe");
+  });
+
   it("moves whole exercises to the next column and explicitly starts following pages", async () => {
     const longExercise = (id: string, name: string) => ({
       ...exercise,

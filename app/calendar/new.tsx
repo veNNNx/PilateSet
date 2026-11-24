@@ -463,9 +463,11 @@ export default function NewCalendarEntryScreen() {
                           count +
                           (item.type === "exercise"
                             ? 1
-                            : (sequences.find(
-                                (sequence) => sequence.id === item.id,
-                              )?.exerciseIds.length ?? 0)),
+                            : item.type === "sequence"
+                              ? (sequences.find(
+                                  (sequence) => sequence.id === item.id,
+                                )?.exerciseIds.length ?? 0)
+                              : 0),
                         0,
                       ),
                       "ćwiczenie",

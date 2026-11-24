@@ -10,8 +10,10 @@ export function getPlanExerciseIds(
   return plan.content.flatMap((item) =>
     item.type === "exercise"
       ? [item.id]
-      : (sequences.find((sequence) => sequence.id === item.id)?.exerciseIds ??
-        []),
+      : item.type === "sequence"
+        ? (sequences.find((sequence) => sequence.id === item.id)?.exerciseIds ??
+          [])
+        : [],
   );
 }
 

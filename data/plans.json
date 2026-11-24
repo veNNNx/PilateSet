@@ -5,6 +5,11 @@
     "description": "Wzmocnienie mięśni brzucha",
     "content": [
       { "type": "sequence", "id": "s2" },
+      {
+        "type": "note",
+        "id": "note-1",
+        "text": "Pamiętaj o spokojnym, równomiernym oddechu."
+      },
       { "type": "sequence", "id": "s1" },
       { "type": "exercise", "id": "35" },
       { "type": "exercise", "id": "34" }

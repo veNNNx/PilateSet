@@ -15,7 +15,8 @@ export type PlanPdfItem =
       load?: string;
       levels: string[];
       exercises: PlanPdfExercise[];
-    };
+    }
+  | { type: "note"; number: string; text: string };
 
 export type PlanPdfDocument = {
   name: string;

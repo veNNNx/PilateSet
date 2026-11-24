@@ -86,7 +86,10 @@ describe("JSON backup import", () => {
         id: "p100",
         name: "Restored plan",
         description: "",
-        content: [{ type: "exercise", id: exercises[0].id }],
+        content: [
+          { type: "note", id: "note-1", text: "Imported cue" },
+          { type: "exercise", id: exercises[0].id },
+        ],
       },
     ];
 
@@ -130,6 +133,10 @@ describe("JSON backup import", () => {
       description: "",
       load: "Medium spring",
       exerciseIds: [exercises[0].id],
+      content: [
+        { type: "exercise", id: exercises[0].id },
+        { type: "note", id: "note-1", text: "Pause here" },
+      ],
     };
     backup["sequences.json"] = [sequence];
 
@@ -142,9 +149,9 @@ describe("JSON backup import", () => {
       { ...exercises[0], name: "Imported exercise", load: "Heavy spring" },
     ]);
     expect(importedExercises[0]).not.toHaveProperty("sets");
-    expect(
-      JSON.parse(contents.get("pilateset.sequences.v1") ?? "[]"),
-    ).toEqual([sequence]);
+    expect(JSON.parse(contents.get("pilateset.sequences.v1") ?? "[]")).toEqual([
+      sequence,
+    ]);
   });
 
   it("rejects malformed backup data before writing anything", async () => {

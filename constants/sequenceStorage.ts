@@ -5,6 +5,7 @@ import { canonicalSequenceId, getSequenceIdMap } from "./sequenceIds";
 import { loadFavorites } from "./favoritesStorage";
 import { loadSequenceNotes } from "./sequenceNotesStorage";
 import { addDeletedId, loadDeletedIds } from "./storageHelpers";
+import { getSequenceContent } from "./sequenceContent";
 
 const STORAGE_FILE = "sequences.json";
 const STORAGE_KEY = "pilateset.sequences.v1";
@@ -17,15 +18,42 @@ export interface Sequence {
   description: string;
   load: string;
   exerciseIds: string[];
+  content?: SequenceContentItem[];
+}
+
+export type SequenceContentItem =
+  { type: "exercise"; id: string } | { type: "note"; id: string; text: string };
+
+type SequenceInput = Omit<Sequence, "content" | "exerciseIds"> & {
+  exerciseIds?: string[];
+  content?: SequenceContentItem[];
+};
+
+type StoredSequence = Omit<Sequence, "content" | "exerciseIds"> & {
+  exerciseIds?: string[];
+  content?: SequenceContentItem[];
+  load?: string;
+};
+
+function normalizeSequence(sequence: SequenceInput): Sequence {
+  const content = getSequenceContent({
+    exerciseIds: sequence.exerciseIds ?? [],
+    content: sequence.content,
+  });
+  return {
+    ...sequence,
+    content,
+    exerciseIds: content
+      .filter((item) => item.type === "exercise")
+      .map((item) => item.id),
+  };
 }
 
 const initialSequenceList: Sequence[] = (
   initialSequences as Omit<Sequence, "load">[]
-).map((sequence) => ({ ...sequence, load: "" }));
+).map((sequence) => normalizeSequence({ ...sequence, load: "" }));
 
-function isStoredSequence(
-  value: unknown,
-): value is Omit<Sequence, "load"> & { load?: string } {
+function isStoredSequence(value: unknown): value is StoredSequence {
   if (typeof value !== "object" || value === null) return false;
   const sequence = value as Record<string, unknown>;
   return (
@@ -33,8 +61,20 @@ function isStoredSequence(
     typeof sequence.name === "string" &&
     typeof sequence.description === "string" &&
     (sequence.load === undefined || typeof sequence.load === "string") &&
-    Array.isArray(sequence.exerciseIds) &&
-    sequence.exerciseIds.every((id) => typeof id === "string")
+    (sequence.exerciseIds === undefined ||
+      (Array.isArray(sequence.exerciseIds) &&
+        sequence.exerciseIds.every((id) => typeof id === "string"))) &&
+    (sequence.content === undefined ||
+      (Array.isArray(sequence.content) &&
+        sequence.content.every(
+          (item) =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof item.id === "string" &&
+            (item.type === "exercise" ||
+              (item.type === "note" && typeof item.text === "string")),
+        ))) &&
+    (Array.isArray(sequence.exerciseIds) || Array.isArray(sequence.content))
   );
 }
 
@@ -55,14 +95,14 @@ export async function loadSequences(): Promise<Sequence[]> {
   if (!Array.isArray(parsedValue) || !parsedValue.every(isStoredSequence)) {
     throw new Error("Zapis sekwencji jest nieprawidłowy.");
   }
-  const parsedSequences = parsedValue as (Omit<Sequence, "load"> & {
-    load?: string;
-  })[];
-  const storedSequences: Sequence[] = parsedSequences.map((sequence) => ({
-    ...sequence,
-    id: canonicalSequenceId(sequence.id, sequenceIdMap),
-    load: sequence.load ?? "",
-  }));
+  const parsedSequences = parsedValue as StoredSequence[];
+  const storedSequences: Sequence[] = parsedSequences.map((sequence) =>
+    normalizeSequence({
+      ...sequence,
+      id: canonicalSequenceId(sequence.id, sequenceIdMap),
+      load: sequence.load ?? "",
+    }),
+  );
   const ids = new Set<string>();
   for (const sequence of storedSequences) {
     if (ids.has(sequence.id))
@@ -72,7 +112,10 @@ export async function loadSequences(): Promise<Sequence[]> {
   const sequencesWereRenamed = storedSequences.some(
     (sequence, index) =>
       sequence.id !== parsedSequences[index].id ||
-      parsedSequences[index].load === undefined,
+      parsedSequences[index].load === undefined ||
+      parsedSequences[index].content === undefined ||
+      JSON.stringify(sequence.exerciseIds) !==
+        JSON.stringify(parsedSequences[index].exerciseIds),
   );
   if (sequencesWereRenamed) {
     const [plans] = await Promise.all([
@@ -125,7 +168,7 @@ export async function saveSequence(sequence: Sequence): Promise<void> {
   if (sequences.some((item) => item.id === sequence.id)) {
     throw new Error("Sekwencja o takim identyfikatorze już istnieje.");
   }
-  await persistSequences([...sequences, sequence]);
+  await persistSequences([...sequences, normalizeSequence(sequence)]);
 }
 
 export async function getNextSequenceId(): Promise<string> {
@@ -155,7 +198,9 @@ export async function updateSequence(updatedSequence: Sequence): Promise<void> {
   }
   await persistSequences(
     sequences.map((sequence) =>
-      sequence.id === updatedSequence.id ? updatedSequence : sequence,
+      sequence.id === updatedSequence.id
+        ? normalizeSequence(updatedSequence)
+        : sequence,
     ),
   );
 }

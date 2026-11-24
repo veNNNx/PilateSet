@@ -25,10 +25,18 @@ const retiredInitialPlanIds = new Set([
 const initialPlans: Plan[] = rawInitialPlans.map((plan) => ({
   ...plan,
   content: plan.content.map((item) => {
-    if (item.type !== "exercise" && item.type !== "sequence") {
-      throw new Error("Bundled plan content is invalid.");
+    if (item.type === "exercise" || item.type === "sequence") {
+      return { type: item.type, id: item.id };
     }
-    return { type: item.type, id: item.id };
+    if (
+      item.type === "note" &&
+      "text" in item &&
+      typeof item.id === "string" &&
+      typeof item.text === "string"
+    ) {
+      return { type: "note", id: item.id, text: item.text };
+    }
+    throw new Error("Bundled plan content is invalid.");
   }),
 }));
 
@@ -39,10 +47,9 @@ export interface Plan {
   content: PlanContentItem[];
 }
 
-export type PlanContentItem = {
-  type: "exercise" | "sequence";
-  id: string;
-};
+export type PlanContentItem =
+  | { type: "exercise" | "sequence"; id: string }
+  | { type: "note"; id: string; text: string };
 
 interface StoredPlan {
   id: string;
@@ -58,10 +65,10 @@ interface PlanInput {
   id: string;
   name: string;
   description: string;
-  content?: { type: string; id: string }[];
+  content?: { type: string; id: string; text?: string }[];
   exerciseIds?: string[];
   sequenceIds?: string[];
-  contentOrder?: { type: string; id: string }[];
+  contentOrder?: { type: string; id: string; text?: string }[];
 }
 
 function isPlan(value: unknown): value is StoredPlan {
@@ -77,8 +84,10 @@ function isPlan(value: unknown): value is StoredPlan {
           (item) =>
             typeof item === "object" &&
             item !== null &&
-            (item.type === "exercise" || item.type === "sequence") &&
-            typeof item.id === "string",
+            typeof item.id === "string" &&
+            (item.type === "exercise" ||
+              item.type === "sequence" ||
+              (item.type === "note" && typeof item.text === "string")),
         ))) &&
     (plan.exerciseIds === undefined ||
       (Array.isArray(plan.exerciseIds) &&
@@ -92,8 +101,10 @@ function isPlan(value: unknown): value is StoredPlan {
           (item) =>
             typeof item === "object" &&
             item !== null &&
-            (item.type === "exercise" || item.type === "sequence") &&
-            typeof item.id === "string",
+            typeof item.id === "string" &&
+            (item.type === "exercise" ||
+              item.type === "sequence" ||
+              (item.type === "note" && typeof item.text === "string")),
         ))) &&
     (Array.isArray(plan.content) ||
       (Array.isArray(plan.exerciseIds) &&
@@ -104,14 +115,18 @@ function isPlan(value: unknown): value is StoredPlan {
 function normalizePlan(plan: PlanInput): Plan {
   const exerciseIds = plan.exerciseIds ?? [];
   const sequenceIds = plan.sequenceIds ?? [];
-  const legacyContent = plan.contentOrder ?? [
-    ...exerciseIds.map((id) => ({ type: "exercise", id })),
-    ...sequenceIds.map((id) => ({ type: "sequence", id })),
-  ];
+  const legacyContent: { type: string; id: string; text?: string }[] =
+    plan.contentOrder ?? [
+      ...exerciseIds.map((id) => ({ type: "exercise", id })),
+      ...sequenceIds.map((id) => ({ type: "sequence", id })),
+    ];
   const legacyItems = legacyContent.filter(
     (item): item is PlanContentItem =>
       (item.type === "exercise" && exerciseIds.includes(item.id)) ||
-      (item.type === "sequence" && sequenceIds.includes(item.id)),
+      (item.type === "sequence" && sequenceIds.includes(item.id)) ||
+      (item.type === "note" &&
+        typeof item.id === "string" &&
+        typeof item.text === "string"),
   );
   const legacyKeys = new Set(
     legacyItems.map((item) => `${item.type}:${item.id}`),
@@ -127,8 +142,10 @@ function normalizePlan(plan: PlanInput): Plan {
   ];
   const content = contentCandidates.filter(
     (item): item is PlanContentItem =>
-      (item.type === "exercise" || item.type === "sequence") &&
-      typeof item.id === "string",
+      typeof item.id === "string" &&
+      (item.type === "exercise" ||
+        item.type === "sequence" ||
+        (item.type === "note" && typeof item.text === "string")),
   );
   const uniqueContent = content.filter(
     (item, index) =>

@@ -10,11 +10,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ExerciseCard } from "./ExerciseCard";
+import { PlanNoteCard } from "./PlanNoteCard";
 import { BorderRadius, Spacing } from "../constants/colors";
 import type { Exercise } from "../constants/exercises";
 import { getSequenceLevels } from "../constants/planLevels";
 import { formatPolishCount } from "../constants/formatting";
 import { exerciseLevelLabels } from "../constants/taxonomy";
+import { getSequenceContent } from "../constants/sequenceContent";
 import type { Sequence } from "../constants/sequenceStorage";
 import { useAppTheme } from "../constants/useAppTheme";
 
@@ -47,10 +49,10 @@ export function SequenceContentCard({
 }: SequenceContentCardProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const sequenceExercises = sequence.exerciseIds
-    .map((exerciseId) =>
-      exercises.find((exercise) => exercise.id === exerciseId),
-    )
+  const sequenceContent = getSequenceContent(sequence);
+  const sequenceExercises = sequenceContent
+    .filter((item) => item.type === "exercise")
+    .map((item) => exercises.find((exercise) => exercise.id === item.id))
     .filter((exercise): exercise is Exercise => exercise !== undefined);
   const levels = getSequenceLevels(sequence, exercises)
     .map((level) => exerciseLevelLabels[level] ?? level)
@@ -129,17 +131,33 @@ export function SequenceContentCard({
       </View>
       {expanded ? (
         <View style={styles.preview}>
-          {sequenceExercises.map((exercise) => (
-            <ExerciseCard
-              key={`${sequence.id}-${exercise.id}`}
-              exercise={exercise}
-              onPress={
-                onExercisePress ? () => onExercisePress(exercise) : undefined
-              }
-              style={styles.exerciseCard}
-            />
-          ))}
-          {sequenceExercises.length === 0 ? (
+          {sequenceContent.map((item, index) => {
+            if (item.type === "note") {
+              return (
+                <View
+                  key={`${sequence.id}:note:${item.id}:${index}`}
+                  style={styles.noteCard}
+                >
+                  <PlanNoteCard text={item.text} />
+                </View>
+              );
+            }
+            const exercise = exercises.find(
+              (candidate) => candidate.id === item.id,
+            );
+            return exercise ? (
+              <ExerciseCard
+                key={`${sequence.id}-${item.id}-${index}`}
+                exercise={exercise}
+                onPress={
+                  onExercisePress ? () => onExercisePress(exercise) : undefined
+                }
+                style={styles.exerciseCard}
+              />
+            ) : null;
+          })}
+          {sequenceExercises.length === 0 &&
+          !sequenceContent.some((item) => item.type === "note") ? (
             <Text style={styles.meta}>Brak dostępnych ćwiczeń.</Text>
           ) : null}
         </View>
@@ -231,6 +249,9 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderTopColor: colors.border,
     },
     exerciseCard: {
+      marginTop: Spacing.sm,
+    },
+    noteCard: {
       marginTop: Spacing.sm,
     },
   });

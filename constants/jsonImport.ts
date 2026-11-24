@@ -47,8 +47,10 @@ function isPlan(value: unknown): value is Plan {
     value.content.every(
       (item) =>
         isRecord(item) &&
-        (item.type === "exercise" || item.type === "sequence") &&
-        typeof item.id === "string",
+        typeof item.id === "string" &&
+        (item.type === "exercise" ||
+          item.type === "sequence" ||
+          (item.type === "note" && typeof item.text === "string")),
     )
   );
 }
@@ -61,7 +63,16 @@ function isSequence(value: unknown): value is Sequence {
     typeof value.description === "string" &&
     (value.load === undefined || typeof value.load === "string") &&
     Array.isArray(value.exerciseIds) &&
-    value.exerciseIds.every((id) => typeof id === "string")
+    value.exerciseIds.every((id) => typeof id === "string") &&
+    (value.content === undefined ||
+      (Array.isArray(value.content) &&
+        value.content.every(
+          (item) =>
+            isRecord(item) &&
+            typeof item.id === "string" &&
+            (item.type === "exercise" ||
+              (item.type === "note" && typeof item.text === "string")),
+        )))
   );
 }
 
